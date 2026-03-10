@@ -3,1139 +3,523 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SUBSTRATE — Faction Battle</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<title>FLOW — interactive particle field</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; overflow:hidden; background:#000; }
+canvas { display:block; position:absolute; inset:0; }
+#bloom { z-index:1; }
+#main  { z-index:2; cursor:none; }
 
-:root {
-  --ember:#ff4d4d; --shade:#c084fc; --volt:#facc15;
-  --moss:#4ade80;  --frost:#60c8fa; --void:#a78bfa;
-  --bg:#0c0c12; --surface:#13131f; --border:#1e1e30;
-  --text:#e2e8f0; --muted:#64748b; --dim:#1e293b;
+/* ── UI OVERLAY ───────────────────────────────── */
+#ui {
+  position:fixed; inset:0; z-index:10;
+  pointer-events:none;
+  font-family:'Inter',sans-serif;
 }
 
-html, body { height:100%; overflow:hidden; background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; }
+/* title */
+#title {
+  position:absolute; top:24px; left:28px;
+  pointer-events:none;
+}
+#title h1 {
+  font-size:28px; font-weight:300; letter-spacing:8px;
+  color:rgba(255,255,255,0.9);
+  text-shadow:0 0 30px rgba(255,255,255,0.3);
+}
+#title p { font-size:11px; color:rgba(255,255,255,0.3); letter-spacing:2px; margin-top:3px; }
 
-body {
-  display:grid;
-  grid-template-rows:auto auto 1fr auto;
-  grid-template-columns:1fr 320px;
-  grid-template-areas:
-    "header  header"
-    "factions factions"
-    "arena   sidebar"
-    "controls controls";
-  gap:0;
+/* hint */
+#hint {
+  position:absolute; top:50%; left:50%;
+  transform:translate(-50%,-50%);
+  text-align:center; pointer-events:none;
+  transition:opacity 2s;
+}
+#hint p { font-size:14px; color:rgba(255,255,255,0.5); letter-spacing:1px; line-height:2; }
+#hint .key { display:inline-block; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); border-radius:4px; padding:1px 7px; font-size:11px; }
+
+/* controls bottom */
+#controls {
+  position:absolute; bottom:24px; left:50%;
+  transform:translateX(-50%);
+  display:flex; align-items:center; gap:10px;
+  background:rgba(0,0,0,0.6);
+  backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:40px;
+  padding:10px 20px;
+  pointer-events:all;
 }
 
-/* ─── HEADER ─────────────────────────────────────────── */
-header {
-  grid-area:header;
-  background:var(--surface);
-  border-bottom:1px solid var(--border);
-  padding:12px 20px;
-  display:flex;
-  align-items:center;
-  gap:16px;
-}
+.sep { width:1px; height:20px; background:rgba(255,255,255,0.1); }
 
-.brand { flex-shrink:0; }
-.brand h1 {
-  font-family:'JetBrains Mono',monospace;
-  font-size:20px; font-weight:700;
-  color:var(--ember);
-  letter-spacing:4px;
-  text-shadow:0 0 20px rgba(255,77,77,0.5);
-}
-.brand p { font-size:12px; color:var(--muted); margin-top:2px; }
+.ctrl-label { font-size:10px; color:rgba(255,255,255,0.3); letter-spacing:1px; text-transform:uppercase; }
 
-.narrator-box {
-  flex:1;
-  background:rgba(0,0,0,0.3);
-  border:1px solid var(--border);
-  border-radius:6px;
-  padding:8px 14px;
-  font-size:13px;
-  color:var(--text);
-  min-height:38px;
-  display:flex;
-  align-items:center;
-  position:relative;
-  overflow:hidden;
-}
-.narrator-box::before {
-  content:'📡';
-  margin-right:8px;
-  font-size:14px;
-  flex-shrink:0;
-}
-#narrator-text { line-height:1.4; }
-
-.header-stats {
-  display:flex;
-  gap:20px;
-  flex-shrink:0;
-}
-.hstat { text-align:center; }
-.hstat-val { font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:700; line-height:1; }
-.hstat-label { font-size:10px; color:var(--muted); margin-top:2px; letter-spacing:1px; text-transform:uppercase; }
-
-/* ─── FACTION STRIP ──────────────────────────────────── */
-.faction-strip {
-  grid-area:factions;
-  background:var(--surface);
-  border-bottom:1px solid var(--border);
-  display:flex;
-  gap:0;
-  overflow-x:auto;
-  padding:10px 12px;
-  gap:8px;
-}
-
-.faction-card {
-  flex:1;
-  min-width:140px;
-  background:rgba(0,0,0,0.3);
-  border:1px solid var(--border);
-  border-radius:8px;
-  padding:10px 12px;
+.palette-btn {
+  width:20px; height:20px; border-radius:50%;
+  border:2px solid transparent;
   cursor:pointer;
   transition:all 0.2s;
+  outline:none;
+  background:none;
   position:relative;
-  overflow:hidden;
 }
-.faction-card::before {
-  content:'';
-  position:absolute;
-  top:0; left:0; right:0;
-  height:3px;
-  border-radius:8px 8px 0 0;
+.palette-btn::after {
+  content:''; position:absolute; inset:-4px;
+  border-radius:50%;
+  border:2px solid transparent;
+  transition:border-color 0.2s;
 }
-.faction-card:hover { border-color:rgba(255,255,255,0.15); transform:translateY(-1px); }
-.faction-card.selected { border-color:rgba(255,255,255,0.3); background:rgba(255,255,255,0.05); }
-.faction-card.extinct { opacity:0.35; }
+.palette-btn.active::after { border-color:rgba(255,255,255,0.7); }
+.palette-btn:hover { transform:scale(1.2); }
 
-.fc-top { display:flex; align-items:center; gap:7px; margin-bottom:6px; }
-.fc-emoji { font-size:18px; line-height:1; }
-.fc-name { font-weight:700; font-size:13px; letter-spacing:0.5px; }
-.fc-nick { font-size:10px; color:var(--muted); }
-.fc-desc { font-size:10px; color:var(--muted); line-height:1.4; margin-bottom:8px; }
-
-.fc-bar-track { height:5px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden; margin-bottom:5px; }
-.fc-bar-fill { height:100%; border-radius:3px; transition:width 0.6s ease; }
-
-.fc-bottom { display:flex; justify-content:space-between; align-items:center; }
-.fc-pct { font-family:'JetBrains Mono',monospace; font-size:16px; font-weight:700; }
-.fc-badge {
-  font-size:9px; font-weight:600; letter-spacing:0.5px;
-  padding:2px 6px; border-radius:3px; text-transform:uppercase;
-}
-.badge-dominant { background:rgba(74,222,128,0.15); color:#4ade80; }
-.badge-active    { background:rgba(255,255,255,0.08); color:var(--muted); }
-.badge-struggling{ background:rgba(251,113,133,0.15); color:#fb7185; }
-.badge-extinct   { background:rgba(100,116,139,0.1);  color:var(--muted); }
-
-/* ─── ARENA ──────────────────────────────────────────── */
-.arena {
-  grid-area:arena;
-  position:relative;
-  overflow:hidden;
-  background:#080810;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-
-#grid-bloom { position:absolute; filter:blur(16px); opacity:0.3; z-index:1; }
-#grid-canvas { position:relative; z-index:2; cursor:crosshair; }
-
-/* scanlines */
-.arena::after {
-  content:'';
-  position:absolute; inset:0; z-index:3;
-  background:repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.07) 3px, rgba(0,0,0,0.07) 4px);
-  pointer-events:none;
-}
-
-/* hover card */
-.hover-card {
-  position:fixed;
-  background:rgba(10,10,18,0.97);
-  border:1px solid var(--border);
-  border-radius:8px;
-  padding:12px 14px;
-  font-size:12px;
-  z-index:100;
-  pointer-events:none;
-  display:none;
-  min-width:180px;
-  box-shadow:0 8px 32px rgba(0,0,0,0.8);
-  backdrop-filter:blur(8px);
-}
-.hover-card.on { display:block; }
-.hc-title { font-size:14px; font-weight:700; margin-bottom:6px; font-family:'JetBrains Mono',monospace; }
-.hc-row { color:var(--muted); margin:3px 0; }
-.hc-row b { color:var(--text); }
-.hc-hint { margin-top:8px; font-size:10px; color:var(--dim); border-top:1px solid var(--border); padding-top:6px; color:var(--muted); }
-
-/* selected overlay */
-.selected-card {
-  position:absolute;
-  top:12px; left:12px;
-  background:rgba(10,10,18,0.95);
-  border:1px solid var(--border);
-  border-radius:8px;
-  padding:14px;
-  z-index:10;
-  display:none;
-  max-width:220px;
-  box-shadow:0 4px 24px rgba(0,0,0,0.8);
-}
-.selected-card.on { display:block; }
-.sc-header { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
-.sc-emoji { font-size:22px; }
-.sc-close { margin-left:auto; cursor:pointer; color:var(--muted); font-size:16px; }
-.sc-close:hover { color:var(--text); }
-.sc-name { font-weight:700; font-size:14px; font-family:'JetBrains Mono',monospace; }
-.sc-species { font-size:11px; color:var(--muted); }
-.sc-stat-row { display:flex; gap:12px; margin-bottom:10px; }
-.sc-stat { text-align:center; flex:1; }
-.sc-stat-val { font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:700; }
-.sc-stat-label { font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; }
-.sc-genome { }
-.sc-genome-title { font-size:10px; color:var(--muted); margin-bottom:5px; text-transform:uppercase; letter-spacing:1px; }
-.sc-dna { display:flex; gap:3px; flex-wrap:wrap; }
-.dna-pill {
-  padding:2px 6px; border-radius:3px;
-  font-size:9px; font-weight:600;
-  color:rgba(0,0,0,0.8); letter-spacing:0.5px;
-}
-
-/* ─── SIDEBAR ────────────────────────────────────────── */
-.sidebar {
-  grid-area:sidebar;
-  background:var(--surface);
-  border-left:1px solid var(--border);
-  display:flex;
-  flex-direction:column;
-  overflow:hidden;
-}
-
-.sb-block {
-  padding:12px 14px;
-  border-bottom:1px solid var(--border);
-  flex-shrink:0;
-}
-.sb-block-title {
-  font-size:10px; font-weight:600; letter-spacing:1.5px;
-  color:var(--muted); text-transform:uppercase; margin-bottom:8px;
-}
-
-/* territory bar */
-.territory-display { }
-.terr-bar { display:flex; height:10px; border-radius:5px; overflow:hidden; margin-bottom:8px; gap:1px; }
-.terr-seg { transition:flex 0.6s ease; border-radius:0; }
-.terr-legend { display:flex; flex-wrap:wrap; gap:6px; }
-.terr-legend-item { display:flex; align-items:center; gap:4px; font-size:10px; color:var(--muted); }
-.terr-dot { width:7px; height:7px; border-radius:50%; }
-
-/* pop chart */
-#pop-canvas { width:100%; height:80px; border-radius:4px; overflow:hidden; }
-
-/* events */
-.events-wrap { flex:1; overflow-y:auto; padding:10px 14px; }
-.events-wrap::-webkit-scrollbar { width:3px; }
-.events-wrap::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
-
-.event-entry {
-  padding:6px 0;
-  border-bottom:1px solid rgba(255,255,255,0.04);
-  font-size:11px;
-  line-height:1.5;
-  color:var(--muted);
-}
-.event-entry.fresh { color:var(--text); }
-.event-entry .evt-time { font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--dim); margin-right:4px; }
-
-/* ─── CONTROLS ───────────────────────────────────────── */
-.controls-bar {
-  grid-area:controls;
-  background:var(--surface);
-  border-top:1px solid var(--border);
-  padding:8px 16px;
-  display:flex;
-  align-items:center;
-  gap:10px;
-  font-size:11px;
-}
-
-.cbtn {
+.mode-btn {
   padding:5px 14px;
-  border-radius:5px;
-  border:1px solid var(--border);
+  border-radius:20px;
+  border:1px solid rgba(255,255,255,0.15);
   background:transparent;
-  color:var(--text);
+  color:rgba(255,255,255,0.5);
   font-family:'Inter',sans-serif;
   font-size:11px;
-  font-weight:500;
+  letter-spacing:0.5px;
   cursor:pointer;
-  transition:all 0.15s;
+  transition:all 0.2s;
+  outline:none;
 }
-.cbtn:hover { background:rgba(255,255,255,0.06); border-color:rgba(255,255,255,0.2); }
-.cbtn.active { background:rgba(255,77,77,0.12); border-color:var(--ember); color:var(--ember); }
+.mode-btn:hover { color:rgba(255,255,255,0.8); border-color:rgba(255,255,255,0.3); }
+.mode-btn.active { color:#fff; border-color:rgba(255,255,255,0.6); background:rgba(255,255,255,0.08); }
 
-.speed-group { display:flex; gap:4px; align-items:center; }
-.speed-label { color:var(--muted); margin-right:4px; }
-.speed-btn {
-  padding:4px 10px;
-  border-radius:4px;
-  border:1px solid var(--border);
+.icon-btn {
+  width:30px; height:30px; border-radius:50%;
+  border:1px solid rgba(255,255,255,0.15);
   background:transparent;
-  color:var(--muted);
-  font-family:'JetBrains Mono',monospace;
-  font-size:10px;
+  color:rgba(255,255,255,0.5);
+  font-size:14px;
   cursor:pointer;
-  transition:all 0.15s;
+  display:flex; align-items:center; justify-content:center;
+  transition:all 0.2s;
+  outline:none;
 }
-.speed-btn:hover { color:var(--text); border-color:rgba(255,255,255,0.2); }
-.speed-btn.active { border-color:var(--volt); color:var(--volt); background:rgba(250,204,21,0.08); }
+.icon-btn:hover { color:#fff; border-color:rgba(255,255,255,0.4); background:rgba(255,255,255,0.06); }
 
-.tip { color:var(--muted); font-size:10px; margin-left:auto; }
+/* well count badge */
+#well-count {
+  position:absolute; bottom:80px; left:50%;
+  transform:translateX(-50%);
+  font-size:11px; color:rgba(255,255,255,0.3);
+  letter-spacing:1px; pointer-events:none;
+  transition:opacity 0.5s;
+}
 
-/* extinct animation */
-@keyframes strike { to { text-decoration:line-through; opacity:0.4; } }
+/* cursor */
+#cursor {
+  position:fixed;
+  width:40px; height:40px;
+  border-radius:50%;
+  border:1px solid rgba(255,255,255,0.4);
+  pointer-events:none;
+  z-index:20;
+  transform:translate(-50%,-50%);
+  transition:width 0.15s, height 0.15s, border-color 0.3s;
+}
+#cursor.repel { border-color:rgba(255,100,100,0.6); width:60px; height:60px; }
+#cursor.attract { border-color:rgba(100,200,255,0.6); }
+
+/* well markers */
+.well-marker {
+  position:fixed;
+  width:8px; height:8px;
+  border-radius:50%;
+  pointer-events:none;
+  z-index:15;
+  transform:translate(-50%,-50%);
+  animation:wellPulse 2s ease-in-out infinite;
+}
+@keyframes wellPulse {
+  0%,100%{ opacity:0.6; transform:translate(-50%,-50%) scale(1); }
+  50%    { opacity:1;   transform:translate(-50%,-50%) scale(1.4); }
+}
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
-<header>
-  <div class="brand">
-    <h1>SUBSTRATE</h1>
-    <p>6 factions fight for memory. Watch them evolve.</p>
-  </div>
-  <div class="narrator-box">
-    <span id="narrator-text">Initializing simulation...</span>
-  </div>
-  <div class="header-stats">
-    <div class="hstat"><div class="hstat-val" id="h-tick">0</div><div class="hstat-label">Tick</div></div>
-    <div class="hstat"><div class="hstat-val" style="color:var(--moss)" id="h-alive">0</div><div class="hstat-label">Alive</div></div>
-    <div class="hstat"><div class="hstat-val" style="color:var(--ember)" id="h-kills">0</div><div class="hstat-label">Kills</div></div>
-  </div>
-</header>
+<canvas id="bloom"></canvas>
+<canvas id="main"></canvas>
+<div id="cursor"></div>
 
-<!-- FACTION STRIP -->
-<div class="faction-strip" id="faction-strip"></div>
+<div id="ui">
+  <div id="title">
+    <h1>FLOW</h1>
+    <p>INTERACTIVE PARTICLE FIELD</p>
+  </div>
 
-<!-- ARENA -->
-<div class="arena" id="arena">
-  <canvas id="grid-bloom"></canvas>
-  <canvas id="grid-canvas"></canvas>
-  <div class="selected-card" id="sel-card">
-    <div class="sc-header">
-      <span class="sc-emoji" id="sc-emoji">🔥</span>
-      <div><div class="sc-name" id="sc-name">—</div><div class="sc-species" id="sc-species">—</div></div>
-      <span class="sc-close" onclick="closeSelection()">✕</span>
-    </div>
-    <div class="sc-stat-row">
-      <div class="sc-stat"><div class="sc-stat-val" id="sc-cells">—</div><div class="sc-stat-label">Cells</div></div>
-      <div class="sc-stat"><div class="sc-stat-val" id="sc-gen">—</div><div class="sc-stat-label">Gen</div></div>
-      <div class="sc-stat"><div class="sc-stat-val" id="sc-kills">—</div><div class="sc-stat-label">Kills</div></div>
-    </div>
-    <div class="sc-genome">
-      <div class="sc-genome-title">Behaviour DNA</div>
-      <div class="sc-dna" id="sc-dna"></div>
-    </div>
+  <div id="hint">
+    <p>
+      <span class="key">click</span> to place a gravity well<br>
+      <span class="key">right click</span> to repel particles<br>
+      <span class="key">move</span> your mouse to shape the flow
+    </p>
   </div>
-</div>
 
-<!-- SIDEBAR -->
-<div class="sidebar">
-  <div class="sb-block">
-    <div class="sb-block-title">Territory Control</div>
-    <div class="territory-display">
-      <div class="terr-bar" id="terr-bar"></div>
-      <div class="terr-legend" id="terr-legend"></div>
-    </div>
-  </div>
-  <div class="sb-block">
-    <div class="sb-block-title">Population Over Time</div>
-    <canvas id="pop-canvas"></canvas>
-  </div>
-  <div class="sb-block" style="border-bottom:none">
-    <div class="sb-block-title">Live Battle Feed</div>
-  </div>
-  <div class="events-wrap" id="events-wrap"></div>
-</div>
+  <div id="well-count"></div>
 
-<!-- CONTROLS -->
-<div class="controls-bar">
-  <button class="cbtn active" id="btn-pause" onclick="togglePause()">⏸ Pause</button>
-  <button class="cbtn" onclick="resetSim()">↺ Reset</button>
-  <div class="speed-group">
-    <span class="speed-label">Speed</span>
-    <button class="speed-btn" id="sp1" onclick="setSpeed(1)">1×</button>
-    <button class="speed-btn active" id="sp3" onclick="setSpeed(3)">3×</button>
-    <button class="speed-btn" id="sp8" onclick="setSpeed(8)">8×</button>
-    <button class="speed-btn" id="sp20" onclick="setSpeed(20)">20×</button>
-  </div>
-  <span class="tip">Click any cell on the battlefield to inspect a program · Click a faction card to highlight its territory</span>
-</div>
+  <div id="controls">
+    <span class="ctrl-label">Palette</span>
+    <button class="palette-btn active" id="p0" title="Cosmic" style="background:linear-gradient(135deg,#667eea,#764ba2)" onclick="setPalette(0)"></button>
+    <button class="palette-btn" id="p1" title="Inferno" style="background:linear-gradient(135deg,#f12711,#f5af19)" onclick="setPalette(1)"></button>
+    <button class="palette-btn" id="p2" title="Ocean" style="background:linear-gradient(135deg,#0575e6,#00f260)" onclick="setPalette(2)"></button>
+    <button class="palette-btn" id="p3" title="Aurora" style="background:linear-gradient(135deg,#a8ff78,#78ffd6)" onclick="setPalette(3)"></button>
+    <button class="palette-btn" id="p4" title="Void" style="background:linear-gradient(135deg,#f7f8f8,#acbb78)" onclick="setPalette(4)"></button>
 
-<div class="hover-card" id="hover-card">
-  <div class="hc-title" id="hc-name">—</div>
-  <div class="hc-row">Faction: <b id="hc-faction">—</b></div>
-  <div class="hc-row">Cells held: <b id="hc-cells">—</b></div>
-  <div class="hc-row">Energy: <b id="hc-energy">—</b></div>
-  <div class="hc-row">Generation: <b id="hc-gen">—</b> &nbsp; Kills: <b id="hc-kills">—</b></div>
-  <div class="hc-hint">Click to pin details</div>
+    <div class="sep"></div>
+    <span class="ctrl-label">Mode</span>
+    <button class="mode-btn active" id="m0" onclick="setMode('flow')">Flow</button>
+    <button class="mode-btn" id="m1" onclick="setMode('vortex')">Vortex</button>
+    <button class="mode-btn" id="m2" onclick="setMode('chaos')">Chaos</button>
+    <button class="mode-btn" id="m3" onclick="setMode('radial')">Radial</button>
+
+    <div class="sep"></div>
+    <button class="icon-btn" onclick="clearWells()" title="Clear gravity wells">⊗</button>
+    <button class="icon-btn" onclick="resetParticles()" title="Reset particles">↺</button>
+  </div>
 </div>
 
 <script>
 // ════════════════════════════════════════════════════
-// CONFIG
+// SETUP
 // ════════════════════════════════════════════════════
-const GW=90, GH=45;
-const INSTRUCTIONS=['NOP','MOV','EAT','ATK','CLN','MUT','SCN','DEF'];
+const mainCanvas  = document.getElementById('main');
+const bloomCanvas = document.getElementById('bloom');
+const ctx  = mainCanvas.getContext('2d');
+const bctx = bloomCanvas.getContext('2d');
+const cursor = document.getElementById('cursor');
+const hintEl = document.getElementById('hint');
+const wellCountEl = document.getElementById('well-count');
 
-const GENE_META = {
-  NOP:{label:'IDLE',   color:'#334155', desc:'does nothing'},
-  MOV:{label:'MOVE',   color:'#3b82f6', desc:'claims empty space'},
-  EAT:{label:'EXPAND', color:'#22c55e', desc:'rapid expansion'},
-  ATK:{label:'ATTACK', color:'#ef4444', desc:'destroys enemy cells'},
-  CLN:{label:'CLONE',  color:'#a855f7', desc:'spawns a child program'},
-  MUT:{label:'MUTATE', color:'#f97316', desc:'rewrites own DNA'},
-  SCN:{label:'SCAN',   color:'#06b6d4', desc:'reads surroundings'},
-  DEF:{label:'DEFEND', color:'#eab308', desc:'fortifies cells'},
-};
+let W, H;
 
-const SPECIES = [
-  { name:'ember', emoji:'🔥', color:'#ff4d4d', rgb:[255,77,77],
-    nick:'The Aggressor',
-    desc:'Attacks constantly. Burns through enemy territory fast.',
-    bias:{ATK:4,EAT:2,MOV:2,CLN:1} },
-  { name:'shade', emoji:'👾', color:'#c084fc', rgb:[192,132,252],
-    nick:'The Mutant',
-    desc:'Constantly rewrites its own DNA. Unpredictable and dangerous.',
-    bias:{MUT:4,ATK:2,SCN:2,CLN:1} },
-  { name:'volt',  emoji:'⚡', color:'#facc15', rgb:[250,204,21],
-    nick:'The Replicator',
-    desc:'Clones itself endlessly. Floods the battlefield with offspring.',
-    bias:{CLN:4,MOV:3,EAT:2,NOP:1} },
-  { name:'moss',  emoji:'🌿', color:'#4ade80', rgb:[74,222,128],
-    nick:'The Fortress',
-    desc:'Slow but incredibly hard to destroy. Fortifies every cell it owns.',
-    bias:{EAT:3,DEF:4,NOP:2,MOV:1} },
-  { name:'frost', emoji:'❄️', color:'#60c8fa', rgb:[96,200,250],
-    nick:'The Tactician',
-    desc:'Scans before acting. Holds strategic ground efficiently.',
-    bias:{DEF:3,SCN:3,MOV:2,EAT:1} },
-  { name:'void',  emoji:'🌀', color:'#a78bfa', rgb:[167,139,250],
-    nick:'The Wildcard',
-    desc:'Chaotic mutations produce wild, unpredictable behaviour.',
-    bias:{MUT:3,NOP:2,ATK:2,CLN:2} },
+function resize(){
+  W = window.innerWidth;
+  H = window.innerHeight;
+  mainCanvas.width  = bloomCanvas.width  = W;
+  mainCanvas.height = bloomCanvas.height = H;
+}
+resize();
+window.addEventListener('resize', () => { resize(); resetParticles(); });
+
+// ════════════════════════════════════════════════════
+// NOISE (value noise, smooth interpolation)
+// ════════════════════════════════════════════════════
+function hash(x, y){
+  const n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
+  return n - Math.floor(n);
+}
+function smoothstep(t){ return t*t*(3-2*t); }
+function noise2D(x, y){
+  const xi=Math.floor(x), yi=Math.floor(y);
+  const xf=x-xi, yf=y-yi;
+  const u=smoothstep(xf), v=smoothstep(yf);
+  return hash(xi,yi)*(1-u)*(1-v) + hash(xi+1,yi)*u*(1-v)
+       + hash(xi,yi+1)*(1-u)*v   + hash(xi+1,yi+1)*u*v;
+}
+function noise3D(x, y, t){
+  // Fake 3D by mixing two 2D slices
+  const t0=Math.floor(t), tf=smoothstep(t-t0);
+  return noise2D(x+t0*7.3, y+t0*3.1) * (1-tf) + noise2D(x+(t0+1)*7.3, y+(t0+1)*3.1) * tf;
+}
+
+// ════════════════════════════════════════════════════
+// PARTICLES (typed arrays for perf)
+// ════════════════════════════════════════════════════
+const N_PARTICLES = 4000;
+const px  = new Float32Array(N_PARTICLES);
+const py  = new Float32Array(N_PARTICLES);
+const pvx = new Float32Array(N_PARTICLES);
+const pvy = new Float32Array(N_PARTICLES);
+const page = new Float32Array(N_PARTICLES);
+
+function resetParticles(){
+  for(let i=0;i<N_PARTICLES;i++){
+    px[i]  = Math.random()*W;
+    py[i]  = Math.random()*H;
+    pvx[i] = (Math.random()-0.5)*0.5;
+    pvy[i] = (Math.random()-0.5)*0.5;
+    page[i] = Math.random()*200;
+  }
+}
+
+// ════════════════════════════════════════════════════
+// GRAVITY WELLS
+// ════════════════════════════════════════════════════
+const wells = []; // { x, y, strength, el }
+
+function addWell(x, y, strength){
+  const el = document.createElement('div');
+  el.className = 'well-marker';
+  el.style.left = x+'px';
+  el.style.top  = y+'px';
+  el.style.background = strength > 0 ? 'rgba(100,200,255,0.8)' : 'rgba(255,80,80,0.8)';
+  el.style.boxShadow  = strength > 0
+    ? '0 0 12px rgba(100,200,255,0.8)' : '0 0 12px rgba(255,80,80,0.8)';
+  document.body.appendChild(el);
+  wells.push({ x, y, strength, el });
+  updateWellCount();
+}
+
+function clearWells(){
+  while(wells.length){
+    const w = wells.pop();
+    if(w.el && w.el.parentNode) w.el.parentNode.removeChild(w.el);
+  }
+  updateWellCount();
+}
+
+function updateWellCount(){
+  if(wells.length === 0){ wellCountEl.style.opacity='0'; return; }
+  wellCountEl.style.opacity='1';
+  wellCountEl.textContent = `${wells.length} gravity well${wells.length>1?'s':''} active  ·  right-click to add repulsors  ·  ⊗ to clear`;
+}
+
+// ════════════════════════════════════════════════════
+// PALETTES
+// ════════════════════════════════════════════════════
+let paletteIdx=0;
+const PALETTES = [
+  // Cosmic: blues/purples/white
+  (speed,x,y,t) => {
+    const h = 220 + speed*80;
+    const s = 70 + speed*20;
+    const l = 30 + speed*55;
+    return `hsl(${h},${s}%,${l}%)`;
+  },
+  // Inferno: black → red → orange → yellow
+  (speed,x,y,t) => {
+    const h = speed*55;
+    const s = 100;
+    const l = 15 + speed*65;
+    return `hsl(${h},${s}%,${l}%)`;
+  },
+  // Ocean: teals, aquas, deep blues
+  (speed,x,y,t) => {
+    const h = 170 + speed*60;
+    const s = 80 + speed*20;
+    const l = 25 + speed*55;
+    return `hsl(${h},${s}%,${l}%)`;
+  },
+  // Aurora: greens → pinks → purples
+  (speed,x,y,t) => {
+    const h = 100 + speed*200 + Math.sin(t*0.5)*20;
+    const s = 70;
+    const l = 35 + speed*45;
+    return `hsl(${h},${s}%,${l}%)`;
+  },
+  // Void: monochrome white/grey
+  (speed,x,y,t) => {
+    const l = 10 + speed*85;
+    return `hsl(0,0%,${l}%)`;
+  },
 ];
-const SP = {};
-SPECIES.forEach(s=>SP[s.name]=s);
 
-// ════════════════════════════════════════════════════
-// MEMORY GRID
-// ════════════════════════════════════════════════════
-const cellOwner   = new Int16Array(GW*GH).fill(-1);
-const cellDef     = new Uint8Array(GW*GH);
-const cellTerrain = new Uint8Array(GW*GH);
-const cellAge     = new Uint16Array(GW*GH);
-function ci(x,y){ return y*GW+x; }
-function adj(x,y){
-  const r=[];
-  if(y>0)    r.push([x,y-1]);
-  if(y<GH-1) r.push([x,y+1]);
-  if(x>0)    r.push([x-1,y]);
-  if(x<GW-1) r.push([x+1,y]);
-  return r;
+function setPalette(i){
+  paletteIdx = i;
+  document.querySelectorAll('.palette-btn').forEach((b,j)=>b.classList.toggle('active',i===j));
 }
 
 // ════════════════════════════════════════════════════
-// PROGRAMS
+// FLOW MODES
 // ════════════════════════════════════════════════════
-let programs=[], nextId=0, tick=0, totalKills=0, extinctions=0;
-const extinctSet=new Set();
-const events=[];
-const popHist={};
-SPECIES.forEach(s=>popHist[s.name]=[]);
-const MAX_HIST=250;
-
-const NAME_POOLS = {
-  ember:['SCORCH','CINDER','EMBER','BLAZE','FLARE','IGNITE','SEAR','CHAR'],
-  shade:['UMBRA','WRAITH','SPECTER','PHASMA','SHADE','PENUMBRA','VEIL','NEXUS'],
-  volt: ['SURGE','ARC','ZAP','SPARK','FLUX','JOLT','PULSE','BOLT'],
-  moss: ['SPORE','MYCO','VERDANT','LICHEN','THALL','FERN','HUMUS','BRACT'],
-  frost:['CRYO','GLACEN','RIME','SHARD','POLAR','BOREAL','GELID','FROST'],
-  void: ['OBLIV','NXYL','ABYSS','NULL','ENTRP','VORTEX','CHASM','RIFT'],
-};
-
-function randName(sp){
-  const pool=NAME_POOLS[sp];
-  return pool[Math.random()*pool.length|0]+'-'+(nextId%99+1);
+let mode = 'flow';
+function setMode(m){
+  mode = m;
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+  const modeIds = {flow:'m0',vortex:'m1',chaos:'m2',radial:'m3'};
+  document.getElementById(modeIds[m]).classList.add('active');
 }
 
-function genGenome(spName){
-  const sp=SP[spName];
-  const pool=[];
-  for(const ins of INSTRUCTIONS){ const w=sp.bias[ins]||1; for(let i=0;i<w;i++) pool.push(ins); }
-  return Array.from({length:14},()=>pool[Math.random()*pool.length|0]);
-}
-
-function mutateGenome(g){
-  const m=[...g];
-  m[Math.random()*m.length|0]=INSTRUCTIONS[Math.random()*INSTRUCTIONS.length|0];
-  return m;
-}
-
-function mkProg(spName, cells, gen=0){
-  nextId++;
-  const sp=SP[spName];
-  return { id:nextId, name:randName(spName), species:spName, rgb:sp.rgb, color:sp.color, emoji:sp.emoji,
-    genome:genGenome(spName), pc:0, cells:new Set(cells.map(([x,y])=>ci(x,y))),
-    energy:25, generation:gen, kills:0, children:0, age:0, alive:true };
-}
-
-function cloneProg(parent, cells){
-  nextId++;
-  const sp=SP[parent.species];
-  return { id:nextId, name:randName(parent.species), species:parent.species, rgb:sp.rgb, color:sp.color, emoji:sp.emoji,
-    genome:Math.random()<0.4?mutateGenome(parent.genome):[...parent.genome], pc:0,
-    cells:new Set(cells.map(([x,y])=>ci(x,y))), energy:14,
-    generation:parent.generation+1, kills:0, children:0, age:0, alive:true };
-}
-
-function logEvent(msg, type='info'){
-  events.push({msg,type,t:tick});
-  if(events.length>100) events.shift();
-}
-
-// ════════════════════════════════════════════════════
-// VM
-// ════════════════════════════════════════════════════
-const flashes=[], births=[];
-
-function exec(prog, pidx){
-  const ins=prog.genome[prog.pc%prog.genome.length];
-  prog.pc=(prog.pc+1)%prog.genome.length;
-  prog.age++; prog.energy--;
-
-  switch(ins){
-    case 'NOP': break;
-    case 'MOV': case 'EAT': {
-      const lim=ins==='EAT'?3:1; let n=0;
-      const shuf=[...prog.cells].sort(()=>Math.random()-0.5);
-      outer: for(const idx of shuf){
-        const x=idx%GW,y=idx/GW|0;
-        for(const[nx,ny] of adj(x,y)){
-          const ni=ci(nx,ny);
-          if(cellOwner[ni]===-1&&!cellTerrain[ni]&&!prog.cells.has(ni)){
-            cellOwner[ni]=pidx; cellDef[ni]=0; cellAge[ni]=0;
-            prog.cells.add(ni);
-            births.push({i:ni,age:0,rgb:prog.rgb});
-            if(++n>=lim) break outer;
-          }
-        }
-      }
-      break;
+function fieldAngle(x, y, t){
+  const scale = 1/280;
+  switch(mode){
+    case 'flow': {
+      const n = noise3D(x*scale, y*scale, t*0.08);
+      return n * Math.PI * 4;
     }
-    case 'ATK': {
-      prog.energy-=2;
-      let bi=-1,bd=999,bp=-1;
-      for(const idx of prog.cells){
-        const x=idx%GW,y=idx/GW|0;
-        for(const[nx,ny] of adj(x,y)){
-          const ni=ci(nx,ny),o=cellOwner[ni];
-          if(o!==-1&&o!==pidx&&cellDef[ni]<bd){bd=cellDef[ni];bi=ni;bp=o;}
-        }
-      }
-      if(bi!==-1&&bp!==-1){
-        const t=programs[bp];
-        if(t?.alive){
-          t.cells.delete(bi); cellOwner[bi]=-1; cellDef[bi]=0; cellAge[bi]=0;
-          flashes.push({i:bi,age:0});
-          prog.kills++; totalKills++;
-          if(t.cells.size===0){
-            t.alive=false;
-            logEvent(`${SP[prog.species].emoji} ${prog.name} eliminated ${SP[t.species].emoji} ${t.name}`,'kill');
-          }
-        }
-      }
-      break;
+    case 'vortex': {
+      // Spiral toward centre + noise
+      const cx=W/2, cy=H/2;
+      const dx=x-cx, dy=y-cy;
+      const baseAngle = Math.atan2(dy,dx) + Math.PI/2;
+      const n = noise3D(x*scale, y*scale, t*0.05)*0.8;
+      return baseAngle + n;
     }
-    case 'CLN': {
-      if(prog.energy>=18&&prog.cells.size>=4){
-        const empty=[],seen=new Set();
-        for(const idx of prog.cells){
-          const x=idx%GW,y=idx/GW|0;
-          for(const[nx,ny] of adj(x,y)){
-            const ni=ci(nx,ny),k=`${nx},${ny}`;
-            if(cellOwner[ni]===-1&&!cellTerrain[ni]&&!prog.cells.has(ni)&&!seen.has(k)){
-              seen.add(k); empty.push([nx,ny]);
-            }
-          }
-          if(empty.length>=4) break;
-        }
-        if(empty.length>=4){
-          const seed=empty.slice(0,4);
-          const child=cloneProg(prog,seed);
-          const cidx=programs.length;
-          programs.push(child);
-          for(const[nx,ny] of seed){
-            const ni=ci(nx,ny);
-            cellOwner[ni]=cidx; cellDef[ni]=0; cellAge[ni]=0;
-            births.push({i:ni,age:0,rgb:child.rgb});
-          }
-          prog.energy-=18; prog.children++;
-          if(prog.children%5===1) logEvent(`${SP[prog.species].emoji} ${prog.name} spawned ${child.name} (gen ${child.generation})`,'birth');
-        }
-      }
-      break;
+    case 'chaos': {
+      const n1 = noise3D(x*scale*2, y*scale*2, t*0.2);
+      const n2 = noise3D(x*scale*2+100, y*scale*2+100, t*0.2);
+      return (n1-0.5)*Math.PI*6 + n2*2;
     }
-    case 'MUT': {
-      prog.genome=mutateGenome(prog.genome);
-      if(Math.random()<0.04) logEvent(`${SP[prog.species].emoji} ${prog.name} mutated its DNA`,'mut');
-      break;
-    }
-    case 'SCN': {
-      let c=0;
-      for(const idx of prog.cells){
-        const x=idx%GW,y=idx/GW|0;
-        for(const[nx,ny] of adj(x,y)){ const ni=ci(nx,ny); if(cellOwner[ni]!==-1&&cellOwner[ni]!==pidx) c++; }
-      }
-      prog.register=c; break;
-    }
-    case 'DEF': {
-      for(const idx of prog.cells) if(cellDef[idx]<6) cellDef[idx]++;
-      break;
+    case 'radial': {
+      // Expand outward from centre + noise
+      const cx=W/2, cy=H/2;
+      const dx=x-cx, dy=y-cy;
+      const baseAngle = Math.atan2(dy,dx);
+      const n = noise3D(x*scale, y*scale, t*0.04)*0.6;
+      return baseAngle + n;
     }
   }
+  return 0;
 }
 
 // ════════════════════════════════════════════════════
-// WORLD INIT
+// MOUSE
 // ════════════════════════════════════════════════════
-const STARTS=[['ember',8,8],['shade',78,8],['volt',8,36],['moss',78,36],['frost',42,4],['void',42,39]];
+let mouseX=W/2, mouseY=H/2, mouseOnScreen=false;
+let hintShown=true;
 
-function genTerrain(){
-  cellTerrain.fill(0);
-  for(let i=0;i<160;i++){
-    const x=2+(Math.random()*(GW-4)|0), y=2+(Math.random()*(GH-4)|0);
-    const ok=!STARTS.some(([,sx,sy])=>Math.abs(x-sx)<7&&Math.abs(y-sy)<7);
-    if(ok){
-      cellTerrain[ci(x,y)]=1;
-      for(let j=0;j<(Math.random()*3|0);j++){
-        const nx=x+(Math.random()*3-1|0), ny=y+(Math.random()*3-1|0);
-        if(nx>=0&&nx<GW&&ny>=0&&ny<GH){
-          if(!STARTS.some(([,sx,sy])=>Math.abs(nx-sx)<7&&Math.abs(ny-sy)<7))
-            cellTerrain[ci(nx,ny)]=1;
-        }
+document.addEventListener('mousemove', e=>{
+  mouseX = e.clientX; mouseY = e.clientY;
+  mouseOnScreen = true;
+  cursor.style.left = mouseX+'px';
+  cursor.style.top  = mouseY+'px';
+  if(hintShown){ hintEl.style.opacity='0'; setTimeout(()=>hintEl.style.display='none',2000); hintShown=false; }
+});
+document.addEventListener('mouseleave', ()=>{ mouseOnScreen=false; });
+
+document.addEventListener('contextmenu', e=>{ e.preventDefault(); addWell(e.clientX, e.clientY, -0.6); });
+mainCanvas.addEventListener('click', e=>{ addWell(e.clientX, e.clientY, 0.8); });
+
+// ════════════════════════════════════════════════════
+// SIMULATION
+// ════════════════════════════════════════════════════
+const SPEED = 1.8;
+const DRAG  = 0.94;
+const MOUSE_RADIUS = 120;
+const WELL_RADIUS  = 200;
+
+let time = 0;
+
+function update(){
+  time += 1;
+  const pf = PALETTES[paletteIdx];
+
+  for(let i=0;i<N_PARTICLES;i++){
+    page[i]++;
+
+    // Flow field force
+    const angle = fieldAngle(px[i], py[i], time);
+    pvx[i] += Math.cos(angle) * 0.12;
+    pvy[i] += Math.sin(angle) * 0.12;
+
+    // Mouse influence (soft attract toward mouse)
+    if(mouseOnScreen){
+      const dx = mouseX - px[i];
+      const dy = mouseY - py[i];
+      const d2 = dx*dx + dy*dy;
+      if(d2 < MOUSE_RADIUS*MOUSE_RADIUS){
+        const d = Math.sqrt(d2);
+        const f = (1 - d/MOUSE_RADIUS) * 0.18;
+        pvx[i] += (dx/d) * f;
+        pvy[i] += (dy/d) * f;
       }
     }
-  }
-}
 
-function initWorld(){
-  programs=[]; nextId=0; tick=0; totalKills=0; extinctions=0;
-  extinctSet.clear(); events.length=0; flashes.length=0; births.length=0;
-  cellOwner.fill(-1); cellDef.fill(0); cellAge.fill(0);
-  SPECIES.forEach(s=>popHist[s.name]=[]);
-  genTerrain();
-  selectedIdx=-1; closeSelection();
-  for(const[sp,x,y] of STARTS){
-    const offs=[[0,0],[1,0],[0,1],[-1,0],[0,-1],[1,1],[-1,-1],[2,0]];
-    const cells=offs.map(([dx,dy])=>[Math.max(0,Math.min(GW-1,x+dx)),Math.max(0,Math.min(GH-1,y+dy))])
-      .filter(([cx,cy])=>!cellTerrain[ci(cx,cy)]).slice(0,6);
-    if(cells.length===0) continue;
-    const prog=mkProg(sp,cells);
-    const pidx=programs.length;
-    programs.push(prog);
-    for(const[cx,cy] of cells) cellOwner[ci(cx,cy)]=pidx;
-  }
-  logEvent('🌱 Simulation started. Six factions enter the battlefield.','info');
-  buildFactionCards();
-}
-
-// ════════════════════════════════════════════════════
-// SIMULATION TICK
-// ════════════════════════════════════════════════════
-function runTick(){
-  tick++;
-  for(let i=0;i<cellAge.length;i++) if(cellOwner[i]!==-1) cellAge[i]=Math.min(cellAge[i]+1,255);
-  for(let i=0;i<programs.length;i++){ const p=programs[i]; if(p.alive){p.energy+=p.cells.size; if(p.energy>250)p.energy=250;} }
-  const alive=[];
-  for(let i=0;i<programs.length;i++) if(programs[i].alive) alive.push(i);
-  for(let i=alive.length-1;i>0;i--){ const j=Math.random()*(i+1)|0; [alive[i],alive[j]]=[alive[j],alive[i]]; }
-  for(const i of alive) if(programs[i].alive) exec(programs[i],i);
-  for(let i=0;i<programs.length;i++){
-    const p=programs[i]; if(!p.alive) continue;
-    if(p.energy<=0||p.cells.size===0){
-      p.alive=false;
-      for(const idx of p.cells){ cellOwner[idx]=-1; cellDef[idx]=0; cellAge[idx]=0; }
-      p.cells.clear();
+    // Gravity wells
+    for(const w of wells){
+      const dx = w.x - px[i];
+      const dy = w.y - py[i];
+      const d2 = dx*dx + dy*dy;
+      if(d2 < WELL_RADIUS*WELL_RADIUS && d2 > 4){
+        const d = Math.sqrt(d2);
+        const f = w.strength * (1 - d/WELL_RADIUS) * 0.35;
+        pvx[i] += (dx/d) * f;
+        pvy[i] += (dy/d) * f;
+      }
     }
-  }
-  for(const sp of SPECIES){
-    if(extinctSet.has(sp.name)) continue;
-    if(!programs.some(p=>p.alive&&p.species===sp.name)&&programs.some(p=>p.species===sp.name)){
-      extinctSet.add(sp.name); extinctions++;
-      logEvent(`☠️ ${sp.emoji} ${sp.name.toUpperCase()} has been wiped out!`,'extinct');
-    }
-  }
-  if(tick%180===0){
-    const x=Math.random()*GW|0,y=Math.random()*GH|0,o=cellOwner[ci(x,y)];
-    if(o!==-1&&programs[o]?.alive){
-      programs[o].genome=mutateGenome(programs[o].genome);
-      logEvent(`☄️ Cosmic ray hit ${programs[o].name} — unexpected mutation!`,'mut');
-    }
-  }
-  if(tick%3===0){
-    for(const sp of SPECIES){
-      let c=0;
-      for(let i=0;i<programs.length;i++) if(programs[i].alive&&programs[i].species===sp.name) c+=programs[i].cells.size;
-      popHist[sp.name].push(c);
-      if(popHist[sp.name].length>MAX_HIST) popHist[sp.name].shift();
-    }
-  }
-  if(programs.length>1000){
-    const keep=[],remap=new Int32Array(programs.length).fill(-1);
-    for(let i=0;i<programs.length;i++) if(programs[i].alive){remap[i]=keep.length;keep.push(programs[i]);}
-    programs=keep;
-    for(let i=0;i<cellOwner.length;i++) if(cellOwner[i]!==-1) cellOwner[i]=remap[cellOwner[i]];
-    if(selectedIdx!==-1) selectedIdx=remap[selectedIdx];
-  }
-}
 
-// ════════════════════════════════════════════════════
-// NARRATOR
-// ════════════════════════════════════════════════════
-const narratorEl=document.getElementById('narrator-text');
-let narratorTick=0;
+    // Drag
+    pvx[i] *= DRAG;
+    pvy[i] *= DRAG;
 
-function updateNarrator(){
-  if(tick-narratorTick<40) return;
-  narratorTick=tick;
-  const spCells={};
-  SPECIES.forEach(s=>spCells[s.name]=0);
-  programs.forEach(p=>{ if(p.alive) spCells[p.species]+=p.cells.size; });
-  const total=GW*GH;
-  const ranked=SPECIES.filter(s=>!extinctSet.has(s.name)).sort((a,b)=>spCells[b.name]-spCells[a.name]);
-  if(ranked.length===0){narratorEl.textContent='The battlefield is empty.';return;}
+    // Speed cap
+    const spd = Math.sqrt(pvx[i]*pvx[i] + pvy[i]*pvy[i]);
+    if(spd > SPEED){ pvx[i] = pvx[i]/spd*SPEED; pvy[i] = pvy[i]/spd*SPEED; }
 
-  const leader=ranked[0];
-  const leaderPct=(spCells[leader.name]/total*100).toFixed(0);
-  const alive=programs.filter(p=>p.alive);
-  const maxGen=alive.reduce((m,p)=>Math.max(m,p.generation),0);
+    // Move
+    px[i] += pvx[i];
+    py[i] += pvy[i];
 
-  const msgs=[
-    `${leader.emoji} ${leader.name.toUpperCase()} is leading with ${leaderPct}% of the battlefield`,
-    `${alive.length} programs still active across ${ranked.length} factions`,
-    ranked.length>1?`${ranked[0].emoji} ${ranked[0].name} vs ${ranked[1].emoji} ${ranked[1].name} — a close fight for dominance`:'Only one faction remains',
-    extinctions>0?`${extinctions} faction${extinctions>1?'s':''} have been completely wiped out`:
-      `All 6 factions are still alive — the battle is early`,
-    maxGen>0?`Programs have evolved to generation ${maxGen} — DNA is drifting from the original`:'Generation 0 — no offspring yet',
-    `${totalKills} cells have been destroyed so far`,
-  ];
-  narratorEl.textContent=msgs[Math.floor(Math.random()*msgs.length)];
+    // Wrap edges (smooth)
+    if(px[i] < -2) px[i] += W+4;
+    if(px[i] > W+2) px[i] -= W+4;
+    if(py[i] < -2) py[i] += H+4;
+    if(py[i] > H+2) py[i] -= H+4;
+  }
 }
 
 // ════════════════════════════════════════════════════
 // RENDERING
 // ════════════════════════════════════════════════════
-const canvas = document.getElementById('grid-canvas');
-const bloom  = document.getElementById('grid-bloom');
-const ctx    = canvas.getContext('2d');
-const bctx   = bloom.getContext('2d');
-let CELL=10, imgData, pixBuf;
-const BG=[8,8,16], WALL=[20,20,32];
+let frameCount = 0;
+const TRAIL_ALPHA = 0.05; // lower = longer trails
 
-function resizeCanvas(){
-  const arena=document.getElementById('arena');
-  const aw=arena.clientWidth-10, ah=arena.clientHeight-10;
-  CELL=Math.max(4,Math.min(Math.floor(aw/GW),Math.floor(ah/GH),16));
-  const cw=CELL*GW, ch=CELL*GH;
-  canvas.width=bloom.width=cw;
-  canvas.height=bloom.height=ch;
-  imgData=ctx.createImageData(cw,ch);
-  pixBuf=imgData.data;
-}
+function draw(){
+  // Fade to black (creates trails)
+  ctx.fillStyle = `rgba(0,0,0,${TRAIL_ALPHA})`;
+  ctx.fillRect(0, 0, W, H);
 
-let focusedSpecies=null;
+  const pf = PALETTES[paletteIdx];
 
-function drawArena(){
-  // Base grid
-  for(let y=0;y<GH;y++){
-    for(let x=0;x<GW;x++){
-      const idx=ci(x,y);
-      const px=x*CELL, py=y*CELL;
-      let r,g,b;
-      if(cellTerrain[idx]){ r=WALL[0];g=WALL[1];b=WALL[2]; }
-      else {
-        const owner=cellOwner[idx];
-        if(owner===-1){ r=BG[0];g=BG[1];b=BG[2]; }
-        else {
-          const p=programs[owner];
-          if(!p){r=BG[0];g=BG[1];b=BG[2];}
-          else {
-            const focused = focusedSpecies===null||p.species===focusedSpecies;
-            const energy=Math.min(p.energy/250,1);
-            const age=Math.min(cellAge[idx]/150,1);
-            const dim = focused?1:0.2;
-            const bright=(0.55+energy*0.45)*dim;
-            r=(p.rgb[0]*bright)|0; g=(p.rgb[1]*bright)|0; b=(p.rgb[2]*bright)|0;
-            if(cellDef[idx]>0){const f=cellDef[idx]/6*0.25; r=Math.min(255,(r+(255-r)*f)|0); g=Math.min(255,(g+(255-g)*f)|0); b=Math.min(255,(b+(255-b)*f)|0);}
-            if(selectedIdx===owner){r=Math.min(255,r+50);g=Math.min(255,g+50);b=Math.min(255,b+50);}
-          }
-        }
-      }
-      for(let dy=0;dy<CELL;dy++){
-        for(let dx=0;dx<CELL;dx++){
-          const off=((py+dy)*canvas.width+(px+dx))*4;
-          pixBuf[off]=r;pixBuf[off+1]=g;pixBuf[off+2]=b;pixBuf[off+3]=255;
-        }
-      }
-    }
+  // Draw particles
+  for(let i=0;i<N_PARTICLES;i++){
+    const spd = Math.sqrt(pvx[i]*pvx[i] + pvy[i]*pvy[i]);
+    const normSpd = Math.min(spd / SPEED, 1);
+    const color = pf(normSpd, px[i]/W, py[i]/H, time*0.01);
+
+    // Line from old to new position for smoother appearance
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 0.8 + normSpd * 0.7;
+    ctx.globalAlpha = 0.6 + normSpd * 0.4;
+    ctx.beginPath();
+    ctx.moveTo(px[i] - pvx[i]*2, py[i] - pvy[i]*2);
+    ctx.lineTo(px[i], py[i]);
+    ctx.stroke();
   }
-  ctx.putImageData(imgData,0,0);
+  ctx.globalAlpha = 1;
 
-  // Territory borders — draw bright lines where factions meet
-  ctx.lineWidth=1;
-  for(let y=0;y<GH;y++){
-    for(let x=0;x<GW;x++){
-      const o=cellOwner[ci(x,y)];
-      if(o===-1||cellTerrain[ci(x,y)]) continue;
-      const sp=programs[o]?.species;
-      if(!sp) continue;
-      // Right border
-      if(x<GW-1){
-        const ro=cellOwner[ci(x+1,y)];
-        if(ro!==-1&&ro!==o){
-          const bx=(x+1)*CELL;
-          ctx.strokeStyle='rgba(255,255,255,0.25)';
-          ctx.beginPath(); ctx.moveTo(bx,y*CELL); ctx.lineTo(bx,(y+1)*CELL); ctx.stroke();
-        }
-      }
-      // Bottom border
-      if(y<GH-1){
-        const bo=cellOwner[ci(x,y+1)];
-        if(bo!==-1&&bo!==o){
-          const by=(y+1)*CELL;
-          ctx.strokeStyle='rgba(255,255,255,0.25)';
-          ctx.beginPath(); ctx.moveTo(x*CELL,by); ctx.lineTo((x+1)*CELL,by); ctx.stroke();
-        }
-      }
-    }
-  }
-
-  // Floating faction labels over territory centres
-  ctx.font=`bold ${Math.max(10,CELL+2)}px JetBrains Mono, monospace`;
-  ctx.textAlign='center'; ctx.textBaseline='middle';
-  for(const sp of SPECIES){
-    if(extinctSet.has(sp.name)) continue;
-    if(focusedSpecies!==null&&sp.name!==focusedSpecies) continue;
-    let sx=0,sy=0,cnt=0;
-    for(let i=0;i<programs.length;i++){
-      if(!programs[i].alive||programs[i].species!==sp.name) continue;
-      for(const idx of programs[i].cells){
-        sx+=idx%GW; sy+=idx/GW|0; cnt++;
-      }
-    }
-    if(cnt<20) continue;
-    const lx=(sx/cnt)*CELL+CELL/2, ly=(sy/cnt)*CELL+CELL/2;
-    ctx.shadowColor=sp.color; ctx.shadowBlur=8;
-    ctx.fillStyle='rgba(0,0,0,0.6)';
-    const label=sp.emoji+' '+sp.name.toUpperCase();
-    const tw=ctx.measureText(label).width;
-    ctx.fillRect(lx-tw/2-4,ly-8,tw+8,16);
-    ctx.fillStyle=sp.color;
-    ctx.fillText(label,lx,ly);
-    ctx.shadowBlur=0;
-  }
-
-  // Battle flashes
-  for(let i=flashes.length-1;i>=0;i--){
-    const f=flashes[i]; f.age++;
-    const a=Math.max(0,1-f.age/8);
-    const x=(f.i%GW)*CELL, y=(f.i/GW|0)*CELL;
-    ctx.fillStyle=`rgba(255,60,40,${a})`;
-    ctx.fillRect(x,y,CELL,CELL);
-    if(f.age>8) flashes.splice(i,1);
-  }
-
-  // Birth pulses
-  for(let i=births.length-1;i>=0;i--){
-    const b=births[i]; b.age++;
-    const a=Math.max(0,0.7-b.age/10);
-    const spread=b.age*1.5;
-    const x=(b.i%GW)*CELL, y=(b.i/GW|0)*CELL;
-    ctx.fillStyle=`rgba(${b.rgb[0]},${b.rgb[1]},${b.rgb[2]},${a*0.4})`;
-    ctx.fillRect(x-spread/2,y-spread/2,CELL+spread,CELL+spread);
-    if(b.age>10) births.splice(i,1);
-  }
-
-  // Bloom
-  bctx.clearRect(0,0,bloom.width,bloom.height);
-  bctx.filter='blur(12px)'; bctx.globalAlpha=0.5;
-  bctx.drawImage(canvas,0,0);
-  bctx.filter='none'; bctx.globalAlpha=1;
+  // Bloom pass
+  bctx.clearRect(0,0,W,H);
+  bctx.filter = 'blur(14px)';
+  bctx.globalAlpha = 0.25;
+  bctx.drawImage(mainCanvas, 0, 0);
+  bctx.filter = 'none';
+  bctx.globalAlpha = 1;
 }
 
 // ════════════════════════════════════════════════════
-// UI UPDATES
+// CURSOR STYLE
 // ════════════════════════════════════════════════════
-let uiClock=0;
-
-function updateUI(){
-  const now=Date.now();
-  if(now-uiClock<200) return;
-  uiClock=now;
-
-  document.getElementById('h-tick').textContent=tick;
-  document.getElementById('h-alive').textContent=programs.filter(p=>p.alive).length;
-  document.getElementById('h-kills').textContent=totalKills;
-
-  const spCells={};
-  SPECIES.forEach(s=>spCells[s.name]=0);
-  programs.forEach(p=>{ if(p.alive) spCells[p.species]+=p.cells.size; });
-  const totalCells=GW*GH;
-
-  // Territory bar
-  const tb=document.getElementById('terr-bar');
-  const tl=document.getElementById('terr-legend');
-  let tbHTML='', tlHTML='';
-  const used=Object.values(spCells).reduce((a,b)=>a+b,0);
-  for(const sp of SPECIES){
-    const pct=spCells[sp.name]/totalCells*100;
-    if(pct>0.1) tbHTML+=`<div class="terr-seg" style="flex:${pct};background:${sp.color}" title="${sp.name}: ${pct.toFixed(1)}%"></div>`;
-    tlHTML+=`<div class="terr-legend-item"><div class="terr-dot" style="background:${extinctSet.has(sp.name)?'#334155':sp.color}"></div>${sp.emoji} ${spCells[sp.name]||'—'}</div>`;
+let lastCursorClass='';
+function updateCursor(){
+  const cls = wells.length > 0 ? 'attract' : 'attract';
+  if(cls !== lastCursorClass){
+    cursor.className = cls;
+    lastCursorClass = cls;
   }
-  const empty=(1-used/totalCells)*100;
-  if(empty>0) tbHTML+=`<div class="terr-seg" style="flex:${empty};background:#1e1e30"></div>`;
-  tb.innerHTML=tbHTML;
-  tl.innerHTML=tlHTML;
-
-  // Faction cards
-  updateFactionCards(spCells,totalCells);
-
-  // Pop chart
-  drawPopChart();
-
-  // Events
-  const ew=document.getElementById('events-wrap');
-  ew.innerHTML='';
-  const recent=[...events].reverse().slice(0,20);
-  for(let i=0;i<recent.length;i++){
-    const e=recent[i];
-    const d=document.createElement('div');
-    d.className=`event-entry${i<3?' fresh':''}`;
-    d.innerHTML=`<span class="evt-time">${e.t}</span>${e.msg}`;
-    ew.appendChild(d);
-  }
-
-  // Selected program
-  if(selectedIdx!==-1&&programs[selectedIdx]?.alive) updateSelection(programs[selectedIdx]);
-  else if(selectedIdx!==-1) closeSelection();
-
-  updateNarrator();
-}
-
-function updateFactionCards(spCells,totalCells){
-  for(const sp of SPECIES){
-    const card=document.getElementById('fc-'+sp.name);
-    if(!card) continue;
-    const cells=spCells[sp.name]||0;
-    const pct=(cells/totalCells*100).toFixed(1);
-    const barEl=card.querySelector('.fc-bar-fill');
-    if(barEl) barEl.style.width=Math.min(100,(cells/totalCells*100)*3)+'%';
-    const pctEl=card.querySelector('.fc-pct');
-    if(pctEl) pctEl.textContent=extinctSet.has(sp.name)?'☠':''+pct+'%';
-    const badge=card.querySelector('.fc-badge');
-    if(badge){
-      const ratio=cells/totalCells;
-      if(extinctSet.has(sp.name)){badge.textContent='EXTINCT';badge.className='fc-badge badge-extinct';}
-      else if(ratio>0.25){badge.textContent='DOMINANT';badge.className='fc-badge badge-dominant';}
-      else if(ratio>0.05){badge.textContent='ACTIVE';badge.className='fc-badge badge-active';}
-      else {badge.textContent='STRUGGLING';badge.className='fc-badge badge-struggling';}
-    }
-    card.classList.toggle('extinct',extinctSet.has(sp.name));
-  }
-}
-
-function buildFactionCards(){
-  const strip=document.getElementById('faction-strip');
-  strip.innerHTML='';
-  for(const sp of SPECIES){
-    const card=document.createElement('div');
-    card.className='faction-card';
-    card.id='fc-'+sp.name;
-    card.style.setProperty('--sp-color',sp.color);
-    card.innerHTML=`
-      <div style="position:absolute;top:0;left:0;right:0;height:3px;background:${sp.color};border-radius:8px 8px 0 0;box-shadow:0 0 8px ${sp.color}66"></div>
-      <div class="fc-top">
-        <span class="fc-emoji">${sp.emoji}</span>
-        <div><div class="fc-name" style="color:${sp.color}">${sp.name.toUpperCase()}</div><div class="fc-nick">${sp.nick}</div></div>
-      </div>
-      <div class="fc-desc">${sp.desc}</div>
-      <div class="fc-bar-track"><div class="fc-bar-fill" style="background:${sp.color};width:0%"></div></div>
-      <div class="fc-bottom">
-        <span class="fc-pct" style="color:${sp.color}">0%</span>
-        <span class="fc-badge badge-active">ACTIVE</span>
-      </div>`;
-    card.addEventListener('click',()=>{
-      if(focusedSpecies===sp.name){ focusedSpecies=null; card.classList.remove('selected'); }
-      else { focusedSpecies=sp.name; document.querySelectorAll('.faction-card').forEach(c=>c.classList.remove('selected')); card.classList.add('selected'); }
-    });
-    strip.appendChild(card);
-  }
-}
-
-function drawPopChart(){
-  const c=document.getElementById('pop-canvas');
-  const cw=c.width=c.offsetWidth,ch=c.height=c.offsetHeight;
-  const cx=c.getContext('2d');
-  cx.fillStyle='rgba(0,0,0,0.4)'; cx.fillRect(0,0,cw,ch);
-  const maxV=Math.max(50,...SPECIES.flatMap(s=>popHist[s.name]));
-  for(const sp of SPECIES){
-    const h=popHist[sp.name];
-    if(h.length<2) continue;
-    cx.beginPath(); cx.strokeStyle=sp.color+'bb'; cx.lineWidth=1.5;
-    cx.shadowColor=sp.color; cx.shadowBlur=3;
-    for(let i=0;i<h.length;i++){
-      const x=(i/MAX_HIST)*cw, y=ch-(h[i]/maxV)*(ch-4)-2;
-      i===0?cx.moveTo(x,y):cx.lineTo(x,y);
-    }
-    cx.stroke(); cx.shadowBlur=0;
-  }
-  // grid lines
-  cx.strokeStyle='rgba(255,255,255,0.04)'; cx.lineWidth=1;
-  for(let i=1;i<4;i++){cx.beginPath();cx.moveTo(0,ch/4*i);cx.lineTo(cw,ch/4*i);cx.stroke();}
-}
-
-// ════════════════════════════════════════════════════
-// INTERACTION
-// ════════════════════════════════════════════════════
-let selectedIdx=-1;
-const hoverCard=document.getElementById('hover-card');
-
-canvas.addEventListener('mousemove',e=>{
-  const r=canvas.getBoundingClientRect();
-  const cx2=(e.clientX-r.left)/CELL|0, cy2=(e.clientY-r.top)/CELL|0;
-  if(cx2<0||cx2>=GW||cy2<0||cy2>=GH){hoverCard.classList.remove('on');return;}
-  const idx=ci(cx2,cy2);
-  if(cellTerrain[idx]){
-    hoverCard.classList.add('on');
-    hoverCard.style.borderLeftColor='#334155';
-    document.getElementById('hc-name').textContent='🧱 Wall / Obstacle';
-    document.getElementById('hc-name').style.color='#64748b';
-    document.getElementById('hc-faction').textContent='Impassable terrain';
-    document.getElementById('hc-cells').textContent='—';
-    document.getElementById('hc-energy').textContent='—';
-    document.getElementById('hc-gen').textContent='—';
-    document.getElementById('hc-kills').textContent='—';
-    hoverCard.style.left=(e.clientX+16)+'px'; hoverCard.style.top=(e.clientY+16)+'px';
-    return;
-  }
-  const owner=cellOwner[idx];
-  if(owner===-1){hoverCard.classList.remove('on');return;}
-  const p=programs[owner]; if(!p){hoverCard.classList.remove('on');return;}
-  const sp=SP[p.species];
-  hoverCard.classList.add('on');
-  hoverCard.style.borderLeftColor=sp.color;
-  hoverCard.style.left=(e.clientX+16)+'px'; hoverCard.style.top=(e.clientY+16)+'px';
-  document.getElementById('hc-name').textContent=`${sp.emoji} ${p.name}`;
-  document.getElementById('hc-name').style.color=sp.color;
-  document.getElementById('hc-faction').textContent=`${sp.name} — ${sp.nick}`;
-  document.getElementById('hc-cells').textContent=p.cells.size+' cells';
-  document.getElementById('hc-energy').textContent=`${p.energy|0} / 250`;
-  document.getElementById('hc-gen').textContent='Gen '+p.generation;
-  document.getElementById('hc-kills').textContent=p.kills+' cells destroyed';
-});
-
-canvas.addEventListener('click',e=>{
-  const r=canvas.getBoundingClientRect();
-  const cx2=(e.clientX-r.left)/CELL|0, cy2=(e.clientY-r.top)/CELL|0;
-  if(cx2<0||cx2>=GW||cy2<0||cy2>=GH) return;
-  const owner=cellOwner[ci(cx2,cy2)];
-  if(owner===-1){closeSelection();return;}
-  selectedIdx = selectedIdx===owner?-1:owner;
-  if(selectedIdx===-1){closeSelection();return;}
-  openSelection(programs[owner]);
-});
-canvas.addEventListener('mouseleave',()=>hoverCard.classList.remove('on'));
-
-function openSelection(p){
-  const sp=SP[p.species];
-  const card=document.getElementById('sel-card');
-  card.style.borderColor=sp.color;
-  card.classList.add('on');
-  document.getElementById('sc-emoji').textContent=sp.emoji;
-  document.getElementById('sc-name').style.color=sp.color;
-  document.getElementById('sc-name').textContent=p.name;
-  document.getElementById('sc-species').textContent=sp.name+' · '+sp.nick;
-  updateSelection(p);
-}
-
-function updateSelection(p){
-  document.getElementById('sc-cells').textContent=p.cells.size;
-  document.getElementById('sc-gen').textContent=p.generation;
-  document.getElementById('sc-kills').textContent=p.kills;
-  const dna=document.getElementById('sc-dna');
-  dna.innerHTML=p.genome.map(g=>{
-    const gm=GENE_META[g];
-    return `<div class="dna-pill" style="background:${gm.color}" title="${gm.desc}">${gm.label}</div>`;
-  }).join('');
-}
-
-function closeSelection(){
-  selectedIdx=-1;
-  document.getElementById('sel-card').classList.remove('on');
-}
-
-// ════════════════════════════════════════════════════
-// CONTROLS
-// ════════════════════════════════════════════════════
-let paused=false, speed=3;
-
-function togglePause(){
-  paused=!paused;
-  const btn=document.getElementById('btn-pause');
-  btn.textContent=paused?'▶ Resume':'⏸ Pause';
-  btn.classList.toggle('active',!paused);
-}
-
-function resetSim(){ initWorld(); }
-
-function setSpeed(s){
-  speed=s;
-  ['sp1','sp3','sp8','sp20'].forEach(id=>document.getElementById(id).classList.remove('active'));
-  document.getElementById('sp'+s).classList.add('active');
 }
 
 // ════════════════════════════════════════════════════
 // LOOP
 // ════════════════════════════════════════════════════
-const TICK_MS=65;
-let lastT=0;
-
-function frame(ts){
-  requestAnimationFrame(frame);
-  if(!paused && ts-lastT>=TICK_MS){
-    lastT=ts;
-    for(let i=0;i<speed;i++) runTick();
-    updateUI();
-  }
-  drawArena();
+function loop(){
+  requestAnimationFrame(loop);
+  update();
+  draw();
+  frameCount++;
 }
 
-window.addEventListener('resize',()=>{ resizeCanvas(); });
-resizeCanvas();
-initWorld();
-requestAnimationFrame(frame);
+resetParticles();
+loop();
 </script>
 </body>
 </html>
