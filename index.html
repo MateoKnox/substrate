@@ -6,7 +6,6 @@
 <title>SUBSTRATE — autonomous programs evolving in memory</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-
   body {
     background: #050508;
     color: #ccc;
@@ -16,48 +15,27 @@
     display: flex;
     flex-direction: column;
   }
-
   header {
-    padding: 10px 20px;
-    border-bottom: 1px solid #1a1a2e;
+    padding: 8px 18px;
+    border-bottom: 1px solid #111122;
     display: flex;
     align-items: center;
     gap: 20px;
     background: #07070f;
     flex-shrink: 0;
   }
-
   .logo {
-    font-size: 20px;
+    font-size: 18px;
     font-weight: bold;
     letter-spacing: 4px;
     color: #ff4444;
     text-shadow: 0 0 20px #ff444466;
   }
-
-  .subtitle {
-    font-size: 11px;
-    color: #444;
-    letter-spacing: 1px;
-  }
-
-  .stats-bar {
-    margin-left: auto;
-    display: flex;
-    gap: 20px;
-    font-size: 11px;
-  }
-
-  .stat { color: #555; }
-  .stat span { color: #aaa; }
-
-  .main {
-    display: flex;
-    flex: 1;
-    overflow: hidden;
-    gap: 0;
-  }
-
+  .subtitle { font-size: 10px; color: #333; letter-spacing: 1px; }
+  .stats-bar { margin-left: auto; display: flex; gap: 18px; font-size: 11px; }
+  .stat { color: #444; }
+  .stat span { color: #999; }
+  .main { display: flex; flex: 1; overflow: hidden; }
   .canvas-wrap {
     flex: 1;
     display: flex;
@@ -67,14 +45,9 @@
     position: relative;
     overflow: hidden;
   }
-
-  canvas {
-    display: block;
-    image-rendering: pixelated;
-  }
-
+  canvas { display: block; image-rendering: pixelated; cursor: crosshair; }
   .sidebar {
-    width: 260px;
+    width: 240px;
     background: #07070f;
     border-left: 1px solid #111122;
     display: flex;
@@ -82,167 +55,79 @@
     overflow: hidden;
     flex-shrink: 0;
   }
-
-  .sidebar-section {
-    padding: 12px 14px;
-    border-bottom: 1px solid #111122;
-  }
-
+  .sidebar-section { padding: 10px 12px; border-bottom: 1px solid #0d0d1a; }
   .section-title {
     font-size: 9px;
     letter-spacing: 2px;
-    color: #333;
+    color: #2a2a3a;
     text-transform: uppercase;
-    margin-bottom: 8px;
+    margin-bottom: 7px;
   }
-
-  .species-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 5px;
-    font-size: 11px;
-  }
-
-  .species-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
-  .species-name { width: 44px; color: #888; }
-
-  .bar-track {
-    flex: 1;
-    height: 4px;
-    background: #111;
-    border-radius: 2px;
-    overflow: hidden;
-  }
-
-  .bar-fill {
-    height: 100%;
-    border-radius: 2px;
-    transition: width 0.5s ease;
-  }
-
-  .species-cells { width: 30px; text-align: right; color: #555; font-size: 10px; }
-
+  .species-row { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; font-size: 11px; }
+  .species-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .species-name { width: 40px; color: #666; font-size: 10px; }
+  .bar-track { flex: 1; height: 3px; background: #0d0d1a; border-radius: 2px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
+  .species-cells { width: 28px; text-align: right; color: #444; font-size: 10px; }
   .program-card {
-    margin-bottom: 8px;
-    padding: 6px 8px;
-    background: #0a0a15;
+    margin-bottom: 6px;
+    padding: 5px 7px;
+    background: #0a0a14;
     border-radius: 3px;
-    border-left: 2px solid #222;
+    border-left: 2px solid #1a1a2e;
     font-size: 10px;
   }
-
-  .program-id { font-size: 11px; margin-bottom: 3px; }
-  .program-stats { color: #555; display: flex; gap: 8px; }
-  .program-stats span { color: #777; }
-
-  .energy-bar {
-    height: 2px;
-    background: #111;
-    margin-top: 4px;
-    border-radius: 1px;
-    overflow: hidden;
-  }
-
-  .energy-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #1a4a1a, #2ecc71);
-    border-radius: 1px;
-    transition: width 0.5s ease;
-  }
-
-  .events-list {
-    flex: 1;
-    overflow: hidden;
-    padding: 10px 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .event-item {
-    font-size: 10px;
-    color: #444;
-    line-height: 1.4;
-    padding: 2px 0;
-    border-bottom: 1px solid #0d0d1a;
-    animation: fadeIn 0.3s ease;
-  }
-
-  .event-item.new { color: #888; }
-
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-4px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
+  .program-id { font-size: 10px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; }
+  .program-meta { color: #444; display: flex; gap: 8px; font-size: 9px; }
+  .program-meta span { color: #666; }
+  .energy-bar { height: 2px; background: #0d0d1a; margin-top: 3px; border-radius: 1px; overflow: hidden; }
+  .energy-fill { height: 100%; background: linear-gradient(90deg, #0d2a0d, #2ecc71); transition: width 0.4s; }
+  .events-section { flex: 1; padding: 10px 12px; overflow: hidden; display: flex; flex-direction: column; }
+  .event-item { font-size: 9px; color: #2a2a3a; line-height: 1.5; padding: 2px 0; border-bottom: 1px solid #0a0a12; }
+  .event-item.fresh { color: #666; }
   .tooltip {
     position: absolute;
-    background: #0d0d1e;
-    border: 1px solid #222244;
-    padding: 8px 12px;
+    background: #0b0b1c;
+    border: 1px solid #1a1a33;
+    padding: 8px 10px;
     border-radius: 4px;
-    font-size: 11px;
+    font-size: 10px;
     pointer-events: none;
     display: none;
     z-index: 10;
-    min-width: 150px;
-    box-shadow: 0 4px 20px #00000088;
+    min-width: 130px;
+    box-shadow: 0 4px 20px #00000099;
   }
-
-  .tooltip.visible { display: block; }
-  .tooltip-title { font-size: 13px; margin-bottom: 4px; }
-  .tooltip-row { color: #666; margin: 2px 0; }
-  .tooltip-row span { color: #aaa; }
-
-  .pulse-ring {
-    position: absolute;
-    border-radius: 50%;
-    pointer-events: none;
-    animation: pulse 0.6s ease-out forwards;
-  }
-
-  @keyframes pulse {
-    0%   { transform: scale(0); opacity: 0.8; }
-    100% { transform: scale(3); opacity: 0; }
-  }
-
+  .tooltip.on { display: block; }
+  .tt-name { font-size: 12px; margin-bottom: 4px; }
+  .tt-row { color: #444; margin: 2px 0; }
+  .tt-row b { color: #888; }
   footer {
-    padding: 6px 20px;
-    font-size: 10px;
-    color: #222;
-    border-top: 1px solid #111122;
+    padding: 5px 18px;
+    font-size: 9px;
+    color: #1a1a2a;
+    border-top: 1px solid #0d0d1a;
     background: #07070f;
     flex-shrink: 0;
     display: flex;
     justify-content: space-between;
   }
-
-  .footer-link { color: #333; text-decoration: none; }
-  .footer-link:hover { color: #666; }
-
-  .offline-msg {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    color: #333;
-    font-size: 13px;
+  footer a { color: #252535; text-decoration: none; }
+  footer a:hover { color: #555; }
+  .btn-row { display: flex; gap: 6px; margin-top: 6px; }
+  .btn {
+    padding: 3px 8px;
+    border: 1px solid #1a1a2e;
+    background: transparent;
+    color: #444;
+    font-family: inherit;
+    font-size: 9px;
+    cursor: pointer;
+    border-radius: 2px;
+    letter-spacing: 1px;
   }
-
-  .offline-title { font-size: 24px; color: #222; letter-spacing: 4px; }
-  .offline-sub { font-size: 11px; color: #2a2a2a; max-width: 300px; text-align: center; line-height: 1.6; }
-  .blink { animation: blink 1.2s step-end infinite; }
-  @keyframes blink { 50% { opacity: 0; } }
+  .btn:hover { border-color: #333; color: #888; }
+  .btn.active { border-color: #ff4444; color: #ff4444; }
 </style>
 </head>
 <body>
@@ -253,294 +138,591 @@
     <div class="subtitle">autonomous programs evolving in memory</div>
   </div>
   <div class="stats-bar">
-    <div class="stat">tick <span id="s-tick">—</span></div>
-    <div class="stat">programs <span id="s-programs">—</span></div>
-    <div class="stat">kills <span id="s-kills">—</span></div>
-    <div class="stat">extinct <span id="s-extinct">—</span></div>
+    <div class="stat">tick <span id="s-tick">0</span></div>
+    <div class="stat">programs <span id="s-progs">0</span></div>
+    <div class="stat">kills <span id="s-kills">0</span></div>
+    <div class="stat">extinct <span id="s-extinct">0</span></div>
   </div>
 </header>
 
 <div class="main">
-  <div class="canvas-wrap" id="canvas-wrap">
+  <div class="canvas-wrap" id="wrap">
     <canvas id="grid"></canvas>
-    <div class="tooltip" id="tooltip">
-      <div class="tooltip-title" id="tt-id">—</div>
-      <div class="tooltip-row">species: <span id="tt-species">—</span></div>
-      <div class="tooltip-row">cells: <span id="tt-cells">—</span></div>
-      <div class="tooltip-row">energy: <span id="tt-energy">—</span></div>
-      <div class="tooltip-row">gen: <span id="tt-gen">—</span></div>
-      <div class="tooltip-row">kills: <span id="tt-kills">—</span></div>
-    </div>
-    <div class="offline-msg" id="offline-msg">
-      <div class="offline-title">SUBSTRATE</div>
-      <div class="offline-sub">
-        Simulation not running locally.<br>
-        Start the engine to watch programs evolve:
-      </div>
-      <div style="color:#1a1a2e; font-size:12px; font-family:monospace;">
-        node engine/world.js<br>
-        node cli.js &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(terminal)<br>
-        node serve.js &nbsp;&nbsp;&nbsp;&nbsp;(web)
-      </div>
-      <div class="blink" style="color:#1e1e3a; font-size:10px; margin-top:12px;">waiting for world-state.json...</div>
+    <div class="tooltip" id="tt">
+      <div class="tt-name" id="tt-id">—</div>
+      <div class="tt-row">species: <b id="tt-sp">—</b></div>
+      <div class="tt-row">cells: <b id="tt-cells">—</b></div>
+      <div class="tt-row">energy: <b id="tt-en">—</b></div>
+      <div class="tt-row">gen: <b id="tt-gen">—</b></div>
+      <div class="tt-row">kills: <b id="tt-k">—</b></div>
     </div>
   </div>
 
   <div class="sidebar">
     <div class="sidebar-section">
       <div class="section-title">Species</div>
-      <div id="species-list"></div>
+      <div id="sp-list"></div>
+      <div class="btn-row">
+        <button class="btn active" id="btn-run" onclick="toggleSim()">PAUSE</button>
+        <button class="btn" onclick="resetSim()">RESET</button>
+      </div>
     </div>
-    <div class="sidebar-section" style="overflow-y:auto; max-height:260px;">
+    <div class="sidebar-section" style="overflow-y:auto;max-height:240px">
       <div class="section-title">Top Programs</div>
-      <div id="programs-list"></div>
+      <div id="prog-list"></div>
     </div>
-    <div class="sidebar-section" style="flex:1; overflow:hidden; display:flex; flex-direction:column;">
+    <div class="events-section">
       <div class="section-title">Events</div>
-      <div class="events-list" id="events-list"></div>
+      <div id="evt-list"></div>
     </div>
   </div>
 </div>
 
 <footer>
-  <span>SUBSTRATE — <a class="footer-link" href="https://github.com/MateoKnox/substrate">github.com/MateoKnox/substrate</a></span>
-  <span>built autonomously by an AI agent on <a class="footer-link" href="https://openclaw.ai" target="_blank">openclaw.ai</a></span>
+  <span>SUBSTRATE — <a href="https://github.com/MateoKnox/substrate">github.com/MateoKnox/substrate</a></span>
+  <span>built autonomously by an AI agent on <a href="https://openclaw.ai" target="_blank">openclaw.ai</a></span>
 </footer>
 
 <script>
-const SPECIES_COLORS = {
-  ember: '#ff4444',
-  shade: '#9b59b6',
-  volt:  '#f1c40f',
-  moss:  '#2ecc71',
-  frost: '#3498db',
-  void:  '#95a5a6',
-};
+// ── CONSTANTS ──────────────────────────────────────────────────────────────
+const GW = 80, GH = 40;
+const INSTRUCTIONS = ['NOP','MOV','EAT','ATK','CLN','MUT','SCN','DEF'];
 
-const SPECIES_RGB = {
-  ember: [255, 68, 68],
-  shade: [155, 89, 182],
-  volt:  [241, 196, 15],
-  moss:  [46, 204, 113],
-  frost: [52, 152, 219],
-  void:  [149, 165, 166],
-};
+const SPECIES_DEF = [
+  { name:'ember', color:'#ff4444', rgb:[255,68,68],   bias:{ATK:3,EAT:2,CLN:1,MOV:1} },
+  { name:'shade', color:'#9b59b6', rgb:[155,89,182],  bias:{MUT:3,ATK:2,SCN:2,NOP:1} },
+  { name:'volt',  color:'#f1c40f', rgb:[241,196,15],  bias:{CLN:3,MOV:2,EAT:2,NOP:1} },
+  { name:'moss',  color:'#2ecc71', rgb:[46,204,113],  bias:{EAT:3,DEF:3,NOP:1,MOV:1} },
+  { name:'frost', color:'#3498db', rgb:[52,152,219],  bias:{DEF:2,SCN:2,MOV:2,EAT:1} },
+  { name:'void',  color:'#95a5a6', rgb:[149,165,166], bias:{MUT:2,NOP:2,ATK:2,SCN:1} },
+];
 
-const canvas = document.getElementById('grid');
-const ctx = canvas.getContext('2d');
-const tooltip = document.getElementById('tooltip');
-const offlineMsg = document.getElementById('offline-msg');
+const SPECIES_MAP = {};
+SPECIES_DEF.forEach(s => SPECIES_MAP[s.name] = s);
 
-let state = null;
-let CELL_SIZE = 10;
-let lastGrid = null;
-let pulses = [];
-let lastEventCount = 0;
+// ── MEMORY ─────────────────────────────────────────────────────────────────
+// Flat arrays for speed
+// owner: Int16Array (index into programs array, -1 = empty)
+// defense: Uint8Array
+const cellOwner   = new Int16Array(GW * GH).fill(-1);
+const cellDef     = new Uint8Array(GW * GH);
 
-function hexToRgb(hex) {
-  const r = parseInt(hex.slice(1,3),16);
-  const g = parseInt(hex.slice(3,5),16);
-  const b = parseInt(hex.slice(5,7),16);
-  return [r,g,b];
+function ci(x, y) { return y * GW + x; }
+
+function adjCells(x, y) {
+  const r = [];
+  if (y > 0)      r.push([x, y-1]);
+  if (y < GH-1)   r.push([x, y+1]);
+  if (x > 0)      r.push([x-1, y]);
+  if (x < GW-1)   r.push([x+1, y]);
+  return r;
 }
 
-function resizeCanvas() {
-  if (!state) return;
-  const wrap = document.getElementById('canvas-wrap');
-  const ww = wrap.clientWidth - 40;
-  const wh = wrap.clientHeight - 40;
-  const scaleW = Math.floor(ww / state.gridW);
-  const scaleH = Math.floor(wh / state.gridH);
-  CELL_SIZE = Math.max(2, Math.min(scaleW, scaleH, 14));
-  canvas.width  = state.gridW * CELL_SIZE;
-  canvas.height = state.gridH * CELL_SIZE;
+// ── PROGRAMS ───────────────────────────────────────────────────────────────
+let programs = [];
+let nextId = 0;
+let tick = 0;
+let totalKills = 0;
+let extinctions = 0;
+let extinctSet = new Set();
+const evtLog = [];
+
+function logEvt(msg) {
+  evtLog.push(msg);
+  if (evtLog.length > 60) evtLog.shift();
 }
 
-function renderGrid() {
-  if (!state) return;
-  const { grid, gridW, gridH } = state;
+function genGenome(speciesName) {
+  const sp = SPECIES_MAP[speciesName];
+  const pool = [];
+  for (const ins of INSTRUCTIONS) {
+    const w = sp.bias[ins] || 1;
+    for (let i = 0; i < w; i++) pool.push(ins);
+  }
+  const g = [];
+  for (let i = 0; i < 12; i++) g.push(pool[Math.random() * pool.length | 0]);
+  return g;
+}
 
-  for (let y = 0; y < gridH; y++) {
-    for (let x = 0; x < gridW; x++) {
-      const species = grid[y * gridW + x];
-      if (species && SPECIES_RGB[species]) {
-        const [r, g, b] = SPECIES_RGB[species];
-        ctx.fillStyle = `rgb(${r},${g},${b})`;
-      } else {
-        ctx.fillStyle = '#0a0a12';
+function mutateGenome(g) {
+  const m = [...g];
+  m[Math.random() * m.length | 0] = INSTRUCTIONS[Math.random() * INSTRUCTIONS.length | 0];
+  return m;
+}
+
+function makeProgram(speciesName, cells, gen = 0) {
+  const sp = SPECIES_MAP[speciesName];
+  const prog = {
+    id: nextId++,
+    label: `${speciesName}:${nextId}`,
+    species: speciesName,
+    rgb: sp.rgb,
+    color: sp.color,
+    genome: genGenome(speciesName),
+    pc: 0,
+    cells: new Set(cells.map(([x,y]) => ci(x,y))),
+    energy: 20,
+    generation: gen,
+    kills: 0,
+    children: 0,
+    age: 0,
+    register: 0,
+    alive: true,
+  };
+  return prog;
+}
+
+function cloneProgram(parent, cells) {
+  const sp = SPECIES_MAP[parent.species];
+  const prog = {
+    id: nextId++,
+    label: `${parent.species}:${nextId}`,
+    species: parent.species,
+    rgb: sp.rgb,
+    color: sp.color,
+    genome: Math.random() < 0.35 ? mutateGenome(parent.genome) : [...parent.genome],
+    pc: 0,
+    cells: new Set(cells.map(([x,y]) => ci(x,y))),
+    energy: 12,
+    generation: parent.generation + 1,
+    kills: 0,
+    children: 0,
+    age: 0,
+    register: 0,
+    alive: true,
+  };
+  return prog;
+}
+
+// ── VM ─────────────────────────────────────────────────────────────────────
+function execInstruction(prog, progIdx) {
+  const instr = prog.genome[prog.pc % prog.genome.length];
+  prog.pc = (prog.pc + 1) % prog.genome.length;
+  prog.age++;
+  prog.energy -= 1;
+
+  switch (instr) {
+    case 'NOP': break;
+
+    case 'MOV':
+    case 'EAT': {
+      const limit = instr === 'EAT' ? 2 : 1;
+      let claimed = 0;
+      outer: for (const idx of prog.cells) {
+        const x = idx % GW, y = (idx / GW) | 0;
+        for (const [nx, ny] of adjCells(x, y)) {
+          const ni = ci(nx, ny);
+          if (cellOwner[ni] === -1) {
+            cellOwner[ni] = progIdx;
+            cellDef[ni] = 0;
+            prog.cells.add(ni);
+            pulses.push({ i: ni, age: 0, rgb: prog.rgb });
+            claimed++;
+            if (claimed >= limit) break outer;
+          }
+        }
       }
-      ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+      break;
+    }
+
+    case 'ATK': {
+      prog.energy -= 2;
+      // Find lowest-defense adjacent enemy cell
+      let bestI = -1, bestDef = 999, bestProg = -1;
+      for (const idx of prog.cells) {
+        const x = idx % GW, y = (idx / GW) | 0;
+        for (const [nx, ny] of adjCells(x, y)) {
+          const ni = ci(nx, ny);
+          const owner = cellOwner[ni];
+          if (owner !== -1 && owner !== progIdx) {
+            const d = cellDef[ni];
+            if (d < bestDef) { bestDef = d; bestI = ni; bestProg = owner; }
+          }
+        }
+      }
+      if (bestI !== -1 && bestProg !== -1) {
+        const target = programs[bestProg];
+        if (target && target.alive) {
+          target.cells.delete(bestI);
+          cellOwner[bestI] = -1;
+          cellDef[bestI] = 0;
+          pulses.push({ i: bestI, age: 0, rgb: [255, 80, 80] });
+          prog.kills++;
+          totalKills++;
+          if (target.cells.size === 0) {
+            target.alive = false;
+            logEvt(`💀 ${target.label} eliminated by ${prog.label}`);
+          }
+        }
+      }
+      break;
+    }
+
+    case 'CLN': {
+      if (prog.energy >= 15 && prog.cells.size >= 3) {
+        // Find 3 adjacent empty cells
+        const empty = [];
+        for (const idx of prog.cells) {
+          const x = idx % GW, y = (idx / GW) | 0;
+          for (const [nx, ny] of adjCells(x, y)) {
+            const ni = ci(nx, ny);
+            if (cellOwner[ni] === -1 && !prog.cells.has(ni)) {
+              const k = `${nx},${ny}`;
+              if (!empty.find(e => e[0]===nx && e[1]===ny)) empty.push([nx, ny]);
+            }
+          }
+          if (empty.length >= 3) break;
+        }
+        if (empty.length >= 3) {
+          const seed = empty.slice(0, 3);
+          const child = cloneProgram(prog, seed);
+          const childIdx = programs.length;
+          programs.push(child);
+          for (const [nx, ny] of seed) {
+            const ni = ci(nx, ny);
+            cellOwner[ni] = childIdx;
+            cellDef[ni] = 0;
+            pulses.push({ i: ni, age: 0, rgb: child.rgb });
+          }
+          prog.energy -= 15;
+          prog.children++;
+          logEvt(`🧬 ${prog.label} (g${prog.generation}) → ${child.label}`);
+        }
+      }
+      break;
+    }
+
+    case 'MUT': {
+      prog.genome = mutateGenome(prog.genome);
+      if (Math.random() < 0.08) logEvt(`☢ ${prog.label} mutated (g${prog.generation})`);
+      break;
+    }
+
+    case 'SCN': {
+      let count = 0;
+      for (const idx of prog.cells) {
+        const x = idx % GW, y = (idx / GW) | 0;
+        for (const [nx, ny] of adjCells(x, y)) {
+          const ni = ci(nx, ny);
+          if (cellOwner[ni] !== -1 && cellOwner[ni] !== progIdx) count++;
+        }
+      }
+      prog.register = count;
+      break;
+    }
+
+    case 'DEF': {
+      for (const idx of prog.cells) {
+        if (cellDef[idx] < 5) cellDef[idx]++;
+      }
+      break;
+    }
+  }
+}
+
+// ── WORLD INIT ─────────────────────────────────────────────────────────────
+const STARTS = [
+  ['ember',  10, 8 ],
+  ['shade',  65, 8 ],
+  ['volt',   10, 30],
+  ['moss',   65, 30],
+  ['frost',  37, 5 ],
+  ['void',   37, 34],
+];
+
+function placeProg(speciesName, cx, cy) {
+  const offsets = [[0,0],[1,0],[0,1],[-1,0],[0,-1],[1,1],[-1,1]];
+  const cells = [];
+  for (const [dx, dy] of offsets) {
+    const x = Math.max(0, Math.min(GW-1, cx+dx));
+    const y = Math.max(0, Math.min(GH-1, cy+dy));
+    if (!cells.find(([a,b]) => a===x && b===y)) cells.push([x, y]);
+  }
+  const prog = makeProgram(speciesName, cells);
+  const idx = programs.length;
+  programs.push(prog);
+  for (const [x, y] of cells) {
+    cellOwner[ci(x, y)] = idx;
+  }
+}
+
+function initWorld() {
+  programs = [];
+  nextId = 0;
+  tick = 0; totalKills = 0; extinctions = 0;
+  extinctSet.clear();
+  evtLog.length = 0;
+  cellOwner.fill(-1);
+  cellDef.fill(0);
+  pulses.length = 0;
+  for (const [sp, x, y] of STARTS) {
+    placeProg(sp, x, y);
+    logEvt(`🌱 ${sp} initialized`);
+  }
+}
+
+// ── SIMULATION TICK ────────────────────────────────────────────────────────
+function runTick() {
+  tick++;
+
+  // Energy gain
+  for (let i = 0; i < programs.length; i++) {
+    const p = programs[i];
+    if (p.alive) {
+      p.energy += p.cells.size;
+      if (p.energy > 200) p.energy = 200;
     }
   }
 
-  // Draw pulse effects
-  ctx.save();
+  // Shuffle alive indices
+  const alive = [];
+  for (let i = 0; i < programs.length; i++) {
+    if (programs[i].alive) alive.push(i);
+  }
+  for (let i = alive.length - 1; i > 0; i--) {
+    const j = Math.random() * (i + 1) | 0;
+    [alive[i], alive[j]] = [alive[j], alive[i]];
+  }
+
+  // Execute
+  for (const i of alive) {
+    if (programs[i].alive) execInstruction(programs[i], i);
+  }
+
+  // Death check
+  for (let i = 0; i < programs.length; i++) {
+    const p = programs[i];
+    if (!p.alive) continue;
+    if (p.energy <= 0 || p.cells.size === 0) {
+      p.alive = false;
+      for (const idx of p.cells) { cellOwner[idx] = -1; cellDef[idx] = 0; }
+      p.cells.clear();
+      if (Math.random() < 0.3) logEvt(`💀 ${p.label} starved`);
+    }
+  }
+
+  // Extinction check
+  for (const sp of SPECIES_DEF) {
+    if (extinctSet.has(sp.name)) continue;
+    const anyAlive = programs.some(p => p.alive && p.species === sp.name);
+    if (!anyAlive && programs.some(p => p.species === sp.name)) {
+      extinctSet.add(sp.name);
+      extinctions++;
+      logEvt(`☠️  ${sp.name} EXTINCT at tick ${tick}`);
+    }
+  }
+
+  // Cosmic ray every 250 ticks
+  if (tick % 250 === 0) {
+    const x = Math.random() * GW | 0;
+    const y = Math.random() * GH | 0;
+    const owner = cellOwner[ci(x, y)];
+    if (owner !== -1 && programs[owner]?.alive) {
+      programs[owner].genome = mutateGenome(programs[owner].genome);
+      logEvt(`☄️  Cosmic ray hit ${programs[owner].label}`);
+    }
+  }
+
+  // Prune dead programs (keep array from growing forever)
+  if (programs.length > 600) {
+    // Rebuild with only alive + recent dead, remapping cellOwner
+    const keep = [];
+    const remap = new Int32Array(programs.length).fill(-1);
+    for (let i = 0; i < programs.length; i++) {
+      if (programs[i].alive) { remap[i] = keep.length; keep.push(programs[i]); }
+    }
+    programs = keep;
+    for (let i = 0; i < cellOwner.length; i++) {
+      if (cellOwner[i] !== -1) cellOwner[i] = remap[cellOwner[i]];
+    }
+  }
+}
+
+// ── RENDERING ──────────────────────────────────────────────────────────────
+const canvas = document.getElementById('grid');
+const ctx = canvas.getContext('2d');
+let CELL = 10;
+let imageData, pixBuf;
+let pulses = [];
+
+const BG = [5, 5, 8];
+
+function resizeCanvas() {
+  const wrap = document.getElementById('wrap');
+  const scaleW = Math.floor((wrap.clientWidth - 20) / GW);
+  const scaleH = Math.floor((wrap.clientHeight - 20) / GH);
+  CELL = Math.max(2, Math.min(scaleW, scaleH, 14));
+  canvas.width  = GW * CELL;
+  canvas.height = GH * CELL;
+  imageData = ctx.createImageData(canvas.width, canvas.height);
+  pixBuf = imageData.data;
+}
+
+function drawGrid() {
+  for (let y = 0; y < GH; y++) {
+    for (let x = 0; x < GW; x++) {
+      const idx = ci(x, y);
+      const owner = cellOwner[idx];
+      let r, g, b;
+      if (owner === -1) {
+        r = BG[0]; g = BG[1]; b = BG[2];
+      } else {
+        const p = programs[owner];
+        if (p) { [r, g, b] = p.rgb; }
+        else   { r = BG[0]; g = BG[1]; b = BG[2]; }
+      }
+      const px = x * CELL, py = y * CELL;
+      for (let dy = 0; dy < CELL; dy++) {
+        for (let dx = 0; dx < CELL; dx++) {
+          const off = ((py + dy) * canvas.width + (px + dx)) * 4;
+          pixBuf[off]   = r;
+          pixBuf[off+1] = g;
+          pixBuf[off+2] = b;
+          pixBuf[off+3] = 255;
+        }
+      }
+    }
+  }
+
+  // Pulse overlay
+  ctx.putImageData(imageData, 0, 0);
   for (let i = pulses.length - 1; i >= 0; i--) {
     const p = pulses[i];
     p.age++;
-    const alpha = Math.max(0, 1 - p.age / 15);
-    const [r, g, b] = SPECIES_RGB[p.species] || [255,255,255];
-    ctx.fillStyle = `rgba(${r},${g},${b},${alpha * 0.4})`;
-    const size = CELL_SIZE + p.age * 1.5;
-    ctx.fillRect(
-      p.x * CELL_SIZE - (size - CELL_SIZE)/2,
-      p.y * CELL_SIZE - (size - CELL_SIZE)/2,
-      size, size
-    );
-    if (p.age > 15) pulses.splice(i, 1);
-  }
-  ctx.restore();
-}
-
-function detectChanges(oldGrid, newGrid, gridW) {
-  if (!oldGrid || !newGrid) return;
-  const maxPulses = 20;
-  let added = 0;
-  for (let i = 0; i < newGrid.length && added < maxPulses; i++) {
-    if (newGrid[i] !== oldGrid[i] && newGrid[i]) {
-      const x = i % gridW;
-      const y = Math.floor(i / gridW);
-      pulses.push({ x, y, species: newGrid[i], age: 0 });
-      added++;
-    }
+    const alpha = Math.max(0, 0.7 - p.age / 12);
+    const x = (p.i % GW) * CELL, y = ((p.i / GW) | 0) * CELL;
+    const spread = p.age * 1.2;
+    ctx.fillStyle = `rgba(${p.rgb[0]},${p.rgb[1]},${p.rgb[2]},${alpha})`;
+    ctx.fillRect(x - spread/2, y - spread/2, CELL + spread, CELL + spread);
+    if (p.age > 12) pulses.splice(i, 1);
   }
 }
 
-function updateSpecies(counts) {
-  const list = document.getElementById('species-list');
-  list.innerHTML = '';
-  for (const [name, color] of Object.entries(SPECIES_COLORS)) {
-    const info = counts?.[name];
+// ── SIDEBAR ────────────────────────────────────────────────────────────────
+let uiThrottle = 0;
+
+function updateUI() {
+  const now = Date.now();
+  if (now - uiThrottle < 200) return;
+  uiThrottle = now;
+
+  document.getElementById('s-tick').textContent = tick;
+  const aliveProgs = programs.filter(p => p.alive);
+  document.getElementById('s-progs').textContent = aliveProgs.length;
+  document.getElementById('s-kills').textContent = totalKills;
+  document.getElementById('s-extinct').textContent = extinctions;
+
+  // Species bars
+  const counts = {};
+  for (const p of aliveProgs) {
+    if (!counts[p.species]) counts[p.species] = { cells: 0, count: 0 };
+    counts[p.species].cells += p.cells.size;
+    counts[p.species].count++;
+  }
+  const maxCells = GW * GH;
+  const spList = document.getElementById('sp-list');
+  spList.innerHTML = '';
+  for (const sp of SPECIES_DEF) {
+    const info = counts[sp.species] || counts[sp.name];
     const cells = info?.cells || 0;
-    const maxCells = state ? state.gridW * state.gridH : 3200;
-    const pct = Math.min(100, (cells / (maxCells * 0.4)) * 100);
+    const pct = Math.min(100, (cells / (maxCells * 0.5)) * 100);
+    const extinct = extinctSet.has(sp.name);
     const row = document.createElement('div');
     row.className = 'species-row';
     row.innerHTML = `
-      <div class="species-dot" style="background:${color}"></div>
-      <div class="species-name">${name}</div>
-      <div class="bar-track">
-        <div class="bar-fill" style="width:${pct}%;background:${color}88"></div>
-      </div>
-      <div class="species-cells">${cells || '—'}</div>
-    `;
-    list.appendChild(row);
+      <div class="species-dot" style="background:${extinct ? '#1a1a2a' : sp.color}"></div>
+      <div class="species-name" style="color:${extinct ? '#222' : '#777'}">${sp.name}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${sp.color}99"></div></div>
+      <div class="species-cells">${extinct ? '✗' : (cells||'—')}</div>`;
+    spList.appendChild(row);
   }
-}
 
-function updatePrograms(programs) {
-  const list = document.getElementById('programs-list');
-  list.innerHTML = '';
-  for (const p of (programs || []).slice(0, 8)) {
-    const color = SPECIES_COLORS[p.species] || '#888';
-    const energyPct = Math.min(100, (p.energy / 200) * 100);
+  // Top programs
+  const top = aliveProgs.sort((a,b) => b.cells.size - a.cells.size).slice(0, 7);
+  const pList = document.getElementById('prog-list');
+  pList.innerHTML = '';
+  for (const p of top) {
+    const ePct = Math.min(100, (p.energy / 200) * 100);
     const card = document.createElement('div');
     card.className = 'program-card';
-    card.style.borderLeftColor = color;
+    card.style.borderLeftColor = p.color;
     card.innerHTML = `
-      <div class="program-id" style="color:${color}">${p.id}</div>
-      <div class="program-stats">
-        <span>cells</span> ${p.cells}
-        <span>gen</span> ${p.generation}
-        <span>⚔</span> ${p.kills}
-      </div>
-      <div class="energy-bar">
-        <div class="energy-fill" style="width:${energyPct}%"></div>
-      </div>
-    `;
-    list.appendChild(card);
+      <div class="program-id" style="color:${p.color}">${p.label}</div>
+      <div class="program-meta"><span>cells</span>${p.cells.size} <span>g</span>${p.generation} <span>⚔</span>${p.kills}</div>
+      <div class="energy-bar"><div class="energy-fill" style="width:${ePct}%"></div></div>`;
+    pList.appendChild(card);
   }
-}
 
-function updateEvents(events) {
-  if (!events || events.length === lastEventCount) return;
-  lastEventCount = events.length;
-  const list = document.getElementById('events-list');
-  list.innerHTML = '';
-  const recent = [...events].reverse().slice(0, 10);
+  // Events
+  const eList = document.getElementById('evt-list');
+  eList.innerHTML = '';
+  const recent = [...evtLog].reverse().slice(0, 12);
   for (let i = 0; i < recent.length; i++) {
-    const div = document.createElement('div');
-    div.className = `event-item${i === 0 ? ' new' : ''}`;
-    div.textContent = recent[i].msg;
-    list.appendChild(div);
+    const d = document.createElement('div');
+    d.className = `event-item${i < 2 ? ' fresh' : ''}`;
+    d.textContent = recent[i];
+    eList.appendChild(d);
   }
 }
 
-function updateStats(s) {
-  document.getElementById('s-tick').textContent = s.tick;
-  document.getElementById('s-programs').textContent = s.totalPrograms;
-  document.getElementById('s-kills').textContent = s.totalKills;
-  document.getElementById('s-extinct').textContent = s.extinctions;
-}
-
-// Tooltip on canvas click
-canvas.addEventListener('mousemove', (e) => {
-  if (!state) return;
-  const rect = canvas.getBoundingClientRect();
-  const mx = e.clientX - rect.left;
-  const my = e.clientY - rect.top;
-  const cx = Math.floor(mx / CELL_SIZE);
-  const cy = Math.floor(my / CELL_SIZE);
-  const species = state.grid[cy * state.gridW + cx];
-
-  if (species) {
-    const prog = (state.programs || []).find(p => p.id.startsWith(species + ':'));
-    tooltip.classList.add('visible');
-    tooltip.style.left = (e.clientX - canvas.getBoundingClientRect().left + 12) + 'px';
-    tooltip.style.top  = (e.clientY - canvas.getBoundingClientRect().top  + 12) + 'px';
-    document.getElementById('tt-id').textContent = prog?.id || species;
-    document.getElementById('tt-id').style.color = SPECIES_COLORS[species] || '#ccc';
-    document.getElementById('tt-species').textContent = species;
-    document.getElementById('tt-cells').textContent = prog?.cells || '?';
-    document.getElementById('tt-energy').textContent = prog?.energy || '?';
-    document.getElementById('tt-gen').textContent = prog?.generation ?? '?';
-    document.getElementById('tt-kills').textContent = prog?.kills || 0;
-  } else {
-    tooltip.classList.remove('visible');
-  }
+// ── TOOLTIP ────────────────────────────────────────────────────────────────
+const tt = document.getElementById('tt');
+canvas.addEventListener('mousemove', e => {
+  const r = canvas.getBoundingClientRect();
+  const cx = ((e.clientX - r.left) / CELL) | 0;
+  const cy = ((e.clientY - r.top)  / CELL) | 0;
+  if (cx < 0 || cx >= GW || cy < 0 || cy >= GH) { tt.classList.remove('on'); return; }
+  const idx = ci(cx, cy);
+  const owner = cellOwner[idx];
+  if (owner === -1) { tt.classList.remove('on'); return; }
+  const p = programs[owner];
+  if (!p) { tt.classList.remove('on'); return; }
+  tt.classList.add('on');
+  tt.style.left = (e.clientX - r.left + 14) + 'px';
+  tt.style.top  = (e.clientY - r.top  + 14) + 'px';
+  document.getElementById('tt-id').style.color = p.color;
+  document.getElementById('tt-id').textContent  = p.label;
+  document.getElementById('tt-sp').textContent    = p.species;
+  document.getElementById('tt-cells').textContent = p.cells.size;
+  document.getElementById('tt-en').textContent    = p.energy | 0;
+  document.getElementById('tt-gen').textContent   = p.generation;
+  document.getElementById('tt-k').textContent     = p.kills;
 });
+canvas.addEventListener('mouseleave', () => tt.classList.remove('on'));
 
-canvas.addEventListener('mouseleave', () => {
-  tooltip.classList.remove('visible');
-});
-
-// Animation loop
-function animationLoop() {
-  renderGrid();
-  requestAnimationFrame(animationLoop);
+// ── CONTROLS ───────────────────────────────────────────────────────────────
+let running = true;
+function toggleSim() {
+  running = !running;
+  document.getElementById('btn-run').textContent = running ? 'PAUSE' : 'RUN';
+  document.getElementById('btn-run').classList.toggle('active', running);
 }
+function resetSim() { initWorld(); }
 
-// Fetch state
-async function fetchState() {
-  try {
-    const res = await fetch('world-state.json?' + Date.now());
-    if (!res.ok) throw new Error('not ok');
-    const newState = await res.json();
+// ── LOOP ───────────────────────────────────────────────────────────────────
+const TICK_MS = 70;
+let lastTick = 0;
+let frameId;
 
-    if (!state || state.tick !== newState.tick) {
-      if (state) detectChanges(state.grid, newState.grid, newState.gridW);
-      state = newState;
-      offlineMsg.style.display = 'none';
-      canvas.style.display = 'block';
-
-      resizeCanvas();
-      updateStats(state);
-      updateSpecies(state.speciesCounts);
-      updatePrograms(state.programs);
-      updateEvents(state.events);
-    }
-  } catch (e) {
-    offlineMsg.style.display = 'flex';
-    canvas.style.display = 'none';
+function frame(ts) {
+  frameId = requestAnimationFrame(frame);
+  if (running && ts - lastTick >= TICK_MS) {
+    lastTick = ts;
+    runTick();
+    updateUI();
   }
+  drawGrid();
 }
 
-window.addEventListener('resize', () => { if (state) resizeCanvas(); });
+window.addEventListener('resize', () => {
+  resizeCanvas();
+  if (imageData) { pixBuf = imageData.data; }
+});
 
 // Start
-animationLoop();
-setInterval(fetchState, 400);
-fetchState();
+resizeCanvas();
+initWorld();
+requestAnimationFrame(frame);
 </script>
 </body>
 </html>
