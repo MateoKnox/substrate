@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SUBSTRATE — autonomous programs evolving in memory</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #050508;
+    color: #ccc;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    padding: 10px 20px;
+    border-bottom: 1px solid #1a1a2e;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: #07070f;
+    flex-shrink: 0;
+  }
+
+  .logo {
+    font-size: 20px;
+    font-weight: bold;
+    letter-spacing: 4px;
+    color: #ff4444;
+    text-shadow: 0 0 20px #ff444466;
+  }
+
+  .subtitle {
+    font-size: 11px;
+    color: #444;
+    letter-spacing: 1px;
+  }
+
+  .stats-bar {
+    margin-left: auto;
+    display: flex;
+    gap: 20px;
+    font-size: 11px;
+  }
+
+  .stat { color: #555; }
+  .stat span { color: #aaa; }
+
+  .main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    gap: 0;
+  }
+
+  .canvas-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #050508;
+    position: relative;
+    overflow: hidden;
+  }
+
+  canvas {
+    display: block;
+    image-rendering: pixelated;
+  }
+
+  .sidebar {
+    width: 260px;
+    background: #07070f;
+    border-left: 1px solid #111122;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .sidebar-section {
+    padding: 12px 14px;
+    border-bottom: 1px solid #111122;
+  }
+
+  .section-title {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: #333;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .species-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px;
+    font-size: 11px;
+  }
+
+  .species-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .species-name { width: 44px; color: #888; }
+
+  .bar-track {
+    flex: 1;
+    height: 4px;
+    background: #111;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.5s ease;
+  }
+
+  .species-cells { width: 30px; text-align: right; color: #555; font-size: 10px; }
+
+  .program-card {
+    margin-bottom: 8px;
+    padding: 6px 8px;
+    background: #0a0a15;
+    border-radius: 3px;
+    border-left: 2px solid #222;
+    font-size: 10px;
+  }
+
+  .program-id { font-size: 11px; margin-bottom: 3px; }
+  .program-stats { color: #555; display: flex; gap: 8px; }
+  .program-stats span { color: #777; }
+
+  .energy-bar {
+    height: 2px;
+    background: #111;
+    margin-top: 4px;
+    border-radius: 1px;
+    overflow: hidden;
+  }
+
+  .energy-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #1a4a1a, #2ecc71);
+    border-radius: 1px;
+    transition: width 0.5s ease;
+  }
+
+  .events-list {
+    flex: 1;
+    overflow: hidden;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .event-item {
+    font-size: 10px;
+    color: #444;
+    line-height: 1.4;
+    padding: 2px 0;
+    border-bottom: 1px solid #0d0d1a;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .event-item.new { color: #888; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .tooltip {
+    position: absolute;
+    background: #0d0d1e;
+    border: 1px solid #222244;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    pointer-events: none;
+    display: none;
+    z-index: 10;
+    min-width: 150px;
+    box-shadow: 0 4px 20px #00000088;
+  }
+
+  .tooltip.visible { display: block; }
+  .tooltip-title { font-size: 13px; margin-bottom: 4px; }
+  .tooltip-row { color: #666; margin: 2px 0; }
+  .tooltip-row span { color: #aaa; }
+
+  .pulse-ring {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: pulse 0.6s ease-out forwards;
+  }
+
+  @keyframes pulse {
+    0%   { transform: scale(0); opacity: 0.8; }
+    100% { transform: scale(3); opacity: 0; }
+  }
+
+  footer {
+    padding: 6px 20px;
+    font-size: 10px;
+    color: #222;
+    border-top: 1px solid #111122;
+    background: #07070f;
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .footer-link { color: #333; text-decoration: none; }
+  .footer-link:hover { color: #666; }
+
+  .offline-msg {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: #333;
+    font-size: 13px;
+  }
+
+  .offline-title { font-size: 24px; color: #222; letter-spacing: 4px; }
+  .offline-sub { font-size: 11px; color: #2a2a2a; max-width: 300px; text-align: center; line-height: 1.6; }
+  .blink { animation: blink 1.2s step-end infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">SUBSTRATE</div>
+    <div class="subtitle">autonomous programs evolving in memory</div>
+  </div>
+  <div class="stats-bar">
+    <div class="stat">tick <span id="s-tick">—</span></div>
+    <div class="stat">programs <span id="s-programs">—</span></div>
+    <div class="stat">kills <span id="s-kills">—</span></div>
+    <div class="stat">extinct <span id="s-extinct">—</span></div>
+  </div>
+</header>
+
+<div class="main">
+  <div class="canvas-wrap" id="canvas-wrap">
+    <canvas id="grid"></canvas>
+    <div class="tooltip" id="tooltip">
+      <div class="tooltip-title" id="tt-id">—</div>
+      <div class="tooltip-row">species: <span id="tt-species">—</span></div>
+      <div class="tooltip-row">cells: <span id="tt-cells">—</span></div>
+      <div class="tooltip-row">energy: <span id="tt-energy">—</span></div>
+      <div class="tooltip-row">gen: <span id="tt-gen">—</span></div>
+      <div class="tooltip-row">kills: <span id="tt-kills">—</span></div>
+    </div>
+    <div class="offline-msg" id="offline-msg">
+      <div class="offline-title">SUBSTRATE</div>
+      <div class="offline-sub">
+        Simulation not running locally.<br>
+        Start the engine to watch programs evolve:
+      </div>
+      <div style="color:#1a1a2e; font-size:12px; font-family:monospace;">
+        node engine/world.js<br>
+        node cli.js &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(terminal)<br>
+        node serve.js &nbsp;&nbsp;&nbsp;&nbsp;(web)
+      </div>
+      <div class="blink" style="color:#1e1e3a; font-size:10px; margin-top:12px;">waiting for world-state.json...</div>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="section-title">Species</div>
+      <div id="species-list"></div>
+    </div>
+    <div class="sidebar-section" style="overflow-y:auto; max-height:260px;">
+      <div class="section-title">Top Programs</div>
+      <div id="programs-list"></div>
+    </div>
+    <div class="sidebar-section" style="flex:1; overflow:hidden; display:flex; flex-direction:column;">
+      <div class="section-title">Events</div>
+      <div class="events-list" id="events-list"></div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span>SUBSTRATE — <a class="footer-link" href="https://github.com/MateoKnox/substrate">github.com/MateoKnox/substrate</a></span>
+  <span>built autonomously by an AI agent on <a class="footer-link" href="https://openclaw.ai" target="_blank">openclaw.ai</a></span>
+</footer>
+
+<script>
+const SPECIES_COLORS = {
+  ember: '#ff4444',
+  shade: '#9b59b6',
+  volt:  '#f1c40f',
+  moss:  '#2ecc71',
+  frost: '#3498db',
+  void:  '#95a5a6',
+};
+
+const SPECIES_RGB = {
+  ember: [255, 68, 68],
+  shade: [155, 89, 182],
+  volt:  [241, 196, 15],
+  moss:  [46, 204, 113],
+  frost: [52, 152, 219],
+  void:  [149, 165, 166],
+};
+
+const canvas = document.getElementById('grid');
+const ctx = canvas.getContext('2d');
+const tooltip = document.getElementById('tooltip');
+const offlineMsg = document.getElementById('offline-msg');
+
+let state = null;
+let CELL_SIZE = 10;
+let lastGrid = null;
+let pulses = [];
+let lastEventCount = 0;
+
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return [r,g,b];
+}
+
+function resizeCanvas() {
+  if (!state) return;
+  const wrap = document.getElementById('canvas-wrap');
+  const ww = wrap.clientWidth - 40;
+  const wh = wrap.clientHeight - 40;
+  const scaleW = Math.floor(ww / state.gridW);
+  const scaleH = Math.floor(wh / state.gridH);
+  CELL_SIZE = Math.max(2, Math.min(scaleW, scaleH, 14));
+  canvas.width  = state.gridW * CELL_SIZE;
+  canvas.height = state.gridH * CELL_SIZE;
+}
+
+function renderGrid() {
+  if (!state) return;
+  const { grid, gridW, gridH } = state;
+
+  for (let y = 0; y < gridH; y++) {
+    for (let x = 0; x < gridW; x++) {
+      const species = grid[y * gridW + x];
+      if (species && SPECIES_RGB[species]) {
+        const [r, g, b] = SPECIES_RGB[species];
+        ctx.fillStyle = `rgb(${r},${g},${b})`;
+      } else {
+        ctx.fillStyle = '#0a0a12';
+      }
+      ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+    }
+  }
+
+  // Draw pulse effects
+  ctx.save();
+  for (let i = pulses.length - 1; i >= 0; i--) {
+    const p = pulses[i];
+    p.age++;
+    const alpha = Math.max(0, 1 - p.age / 15);
+    const [r, g, b] = SPECIES_RGB[p.species] || [255,255,255];
+    ctx.fillStyle = `rgba(${r},${g},${b},${alpha * 0.4})`;
+    const size = CELL_SIZE + p.age * 1.5;
+    ctx.fillRect(
+      p.x * CELL_SIZE - (size - CELL_SIZE)/2,
+      p.y * CELL_SIZE - (size - CELL_SIZE)/2,
+      size, size
+    );
+    if (p.age > 15) pulses.splice(i, 1);
+  }
+  ctx.restore();
+}
+
+function detectChanges(oldGrid, newGrid, gridW) {
+  if (!oldGrid || !newGrid) return;
+  const maxPulses = 20;
+  let added = 0;
+  for (let i = 0; i < newGrid.length && added < maxPulses; i++) {
+    if (newGrid[i] !== oldGrid[i] && newGrid[i]) {
+      const x = i % gridW;
+      const y = Math.floor(i / gridW);
+      pulses.push({ x, y, species: newGrid[i], age: 0 });
+      added++;
+    }
+  }
+}
+
+function updateSpecies(counts) {
+  const list = document.getElementById('species-list');
+  list.innerHTML = '';
+  for (const [name, color] of Object.entries(SPECIES_COLORS)) {
+    const info = counts?.[name];
+    const cells = info?.cells || 0;
+    const maxCells = state ? state.gridW * state.gridH : 3200;
+    const pct = Math.min(100, (cells / (maxCells * 0.4)) * 100);
+    const row = document.createElement('div');
+    row.className = 'species-row';
+    row.innerHTML = `
+      <div class="species-dot" style="background:${color}"></div>
+      <div class="species-name">${name}</div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${pct}%;background:${color}88"></div>
+      </div>
+      <div class="species-cells">${cells || '—'}</div>
+    `;
+    list.appendChild(row);
+  }
+}
+
+function updatePrograms(programs) {
+  const list = document.getElementById('programs-list');
+  list.innerHTML = '';
+  for (const p of (programs || []).slice(0, 8)) {
+    const color = SPECIES_COLORS[p.species] || '#888';
+    const energyPct = Math.min(100, (p.energy / 200) * 100);
+    const card = document.createElement('div');
+    card.className = 'program-card';
+    card.style.borderLeftColor = color;
+    card.innerHTML = `
+      <div class="program-id" style="color:${color}">${p.id}</div>
+      <div class="program-stats">
+        <span>cells</span> ${p.cells}
+        <span>gen</span> ${p.generation}
+        <span>⚔</span> ${p.kills}
+      </div>
+      <div class="energy-bar">
+        <div class="energy-fill" style="width:${energyPct}%"></div>
+      </div>
+    `;
+    list.appendChild(card);
+  }
+}
+
+function updateEvents(events) {
+  if (!events || events.length === lastEventCount) return;
+  lastEventCount = events.length;
+  const list = document.getElementById('events-list');
+  list.innerHTML = '';
+  const recent = [...events].reverse().slice(0, 10);
+  for (let i = 0; i < recent.length; i++) {
+    const div = document.createElement('div');
+    div.className = `event-item${i === 0 ? ' new' : ''}`;
+    div.textContent = recent[i].msg;
+    list.appendChild(div);
+  }
+}
+
+function updateStats(s) {
+  document.getElementById('s-tick').textContent = s.tick;
+  document.getElementById('s-programs').textContent = s.totalPrograms;
+  document.getElementById('s-kills').textContent = s.totalKills;
+  document.getElementById('s-extinct').textContent = s.extinctions;
+}
+
+// Tooltip on canvas click
+canvas.addEventListener('mousemove', (e) => {
+  if (!state) return;
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  const cx = Math.floor(mx / CELL_SIZE);
+  const cy = Math.floor(my / CELL_SIZE);
+  const species = state.grid[cy * state.gridW + cx];
+
+  if (species) {
+    const prog = (state.programs || []).find(p => p.id.startsWith(species + ':'));
+    tooltip.classList.add('visible');
+    tooltip.style.left = (e.clientX - canvas.getBoundingClientRect().left + 12) + 'px';
+    tooltip.style.top  = (e.clientY - canvas.getBoundingClientRect().top  + 12) + 'px';
+    document.getElementById('tt-id').textContent = prog?.id || species;
+    document.getElementById('tt-id').style.color = SPECIES_COLORS[species] || '#ccc';
+    document.getElementById('tt-species').textContent = species;
+    document.getElementById('tt-cells').textContent = prog?.cells || '?';
+    document.getElementById('tt-energy').textContent = prog?.energy || '?';
+    document.getElementById('tt-gen').textContent = prog?.generation ?? '?';
+    document.getElementById('tt-kills').textContent = prog?.kills || 0;
+  } else {
+    tooltip.classList.remove('visible');
+  }
+});
+
+canvas.addEventListener('mouseleave', () => {
+  tooltip.classList.remove('visible');
+});
+
+// Animation loop
+function animationLoop() {
+  renderGrid();
+  requestAnimationFrame(animationLoop);
+}
+
+// Fetch state
+async function fetchState() {
+  try {
+    const res = await fetch('world-state.json?' + Date.now());
+    if (!res.ok) throw new Error('not ok');
+    const newState = await res.json();
+
+    if (!state || state.tick !== newState.tick) {
+      if (state) detectChanges(state.grid, newState.grid, newState.gridW);
+      state = newState;
+      offlineMsg.style.display = 'none';
+      canvas.style.display = 'block';
+
+      resizeCanvas();
+      updateStats(state);
+      updateSpecies(state.speciesCounts);
+      updatePrograms(state.programs);
+      updateEvents(state.events);
+    }
+  } catch (e) {
+    offlineMsg.style.display = 'flex';
+    canvas.style.display = 'none';
+  }
+}
+
+window.addEventListener('resize', () => { if (state) resizeCanvas(); });
+
+// Start
+animationLoop();
+setInterval(fetchState, 400);
+fetchState();
+</script>
+</body>
+</html>
